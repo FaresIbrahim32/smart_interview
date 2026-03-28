@@ -3,37 +3,35 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { question, answer, userId, language } = body;
+    const { question, answer, session_id, language = "english" } = body;
 
-    if (!question || !answer || !userId) {
+    if (!question || !answer || !session_id) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields (question, answer, session_id)" },
         { status: 400 }
       );
     }
 
-    // TODO: Your teammates will implement:
-    // 1. Send question to ElevenLabs TTS for audio generation
-    // 2. Process user response (ASL recognition or voice transcription)
-    // 3. Generate follow-up questions using RAG
-    // 4. Store interview session data
+    // Call Python backend
+    const pythonApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-    // In production:
-    // const pythonApiUrl = process.env.NEXT_PUBLIC_API_URL;
-    // const response = await fetch(`${pythonApiUrl}/interview/followup`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ question, answer, user_id: userId, language }),
-    // });
-    // const data = await response.json();
+    const response = await fetch(`${pythonApiUrl}/interview/process`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, answer, session_id, language }),
+    });
 
-    // Mock follow-up question
-    const mockFollowup = {
-      followup_question: "That's interesting. Can you tell me more about how you approached that?",
-      audio_url: null, // Will be populated by ElevenLabs TTS
-    };
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to process interview");
+    }
 
-    return NextResponse.json(mockFollowup);
+    const data = await response.json();
+
+    return NextResponse.json({
+      followup_question: data.followup_question,
+      audio_base64: data.audio_base64, // Base64 encoded MP3 audio from ElevenLabs
+    });
   } catch (error: any) {
     console.error("Error processing interview:", error);
     return NextResponse.json(

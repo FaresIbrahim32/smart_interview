@@ -1,6 +1,6 @@
-# Integration Guide for Team
+# Smart Interview - Full Stack Integration Guide
 
-This guide helps your teammates integrate their backend work with the new Next.js frontend.
+This guide explains how the Next.js frontend connects to the FastAPI backend.
 
 ## Current Status
 

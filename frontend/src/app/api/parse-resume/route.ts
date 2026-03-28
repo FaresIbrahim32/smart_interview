@@ -13,27 +13,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Your teammates will implement the Python backend
-    // For now, return mock data
+    // Call Python backend
+    const pythonApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-    // In production, this would call your Python backend:
-    // const pythonApiUrl = process.env.NEXT_PUBLIC_API_URL;
-    // const response = await fetch(`${pythonApiUrl}/parse-resume`, {
-    //   method: "POST",
-    //   body: formData,
-    // });
-    // const data = await response.json();
+    const backendFormData = new FormData();
+    backendFormData.append("file", file);
 
-    // Mock field detection based on resume content
-    // Your teammates will replace this with actual RAG parsing
-    const mockField = detectFieldFromResume(file.name);
+    const response = await fetch(`${pythonApiUrl}/parse-resume`, {
+      method: "POST",
+      body: backendFormData,
+    });
 
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to parse resume");
+    }
+
+    const data = await response.json();
+
+    // Return parsed fields and chunks
     return NextResponse.json({
-      field: mockField,
-      parsed_data: {
-        sections: ["skills", "experience", "education"],
-        chunks: [],
-      },
+      fields: data.fields,
+      chunks: data.chunks,
     });
   } catch (error: any) {
     console.error("Error parsing resume:", error);
@@ -42,16 +43,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Mock function - your teammates will replace with actual ML detection
-function detectFieldFromResume(filename: string): string {
-  const fields = [
-    "Software Engineering",
-    "Data Science",
-    "Product Management",
-    "UI/UX Design",
-    "DevOps Engineering",
-  ];
-  return fields[Math.floor(Math.random() * fields.length)];
 }
