@@ -16,8 +16,6 @@ import tempfile
 import base64
 from pathlib import Path
 from typing import List, Dict, Optional
-import numpy as np
-import cv2
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,9 +29,19 @@ from rag.parser import parse_resume
 from rag.vectorstore import build_vectorstore, query as query_vectorstore
 from rag.interviewer import get_client, generate_questions, generate_followup
 from tts import speak
-from asl.detector import HandDetector
-from asl.classifier import GestureClassifier
-from asl.buffer import LetterBuffer
+
+# Try to import ASL dependencies (optional - requires Python 3.8-3.12)
+ASL_AVAILABLE = False
+try:
+    import numpy as np
+    import cv2
+    from asl.detector import HandDetector
+    from asl.classifier import GestureClassifier
+    from asl.buffer import LetterBuffer
+    ASL_AVAILABLE = True
+except ImportError:
+    print("⚠️  ASL dependencies not available. ASL mode disabled.")
+    print("   To enable: Use Python 3.8-3.12, uncomment ASL deps in requirements.txt, pip install")
 
 load_dotenv()
 
@@ -291,6 +299,13 @@ async def asl_recognition_websocket(websocket: WebSocket):
     Receives video frames, returns recognized letters/words.
     """
     await websocket.accept()
+
+    if not ASL_AVAILABLE:
+        await websocket.send_json({
+            "error": "ASL recognition not available. Requires Python 3.8-3.12 with mediapipe installed."
+        })
+        await websocket.close()
+        return
 
     # Initialize ASL components
     detector = HandDetector(max_hands=1)
