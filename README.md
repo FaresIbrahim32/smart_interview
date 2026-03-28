@@ -80,4 +80,3 @@ smart_interview/
 ```
 
 
-ElevenLabs API Key: sk_c3717308f6b466c42ebcca4baf81e1fa3b60c361b7a82bec
