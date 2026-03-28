@@ -78,3 +78,6 @@ smart_interview/
 │   ├── vectorstore.py   # ChromaDB setup and querying
 │   └── interviewer.py   # Groq LLM calls for question and follow-up generation
 ```
+
+
+ElevenLabs API Key: sk_c3717308f6b466c42ebcca4baf81e1fa3b60c361b7a82bec
