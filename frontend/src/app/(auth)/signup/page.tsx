@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = 'edge';
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -56,7 +54,7 @@ export default function SignupPage() {
         if (profileError) throw profileError;
 
         // Redirect to setup page
-        router.push("/setup");
+        router.replace("/setup");
       }
     } catch (err: any) {
       setError(err.message || "Failed to sign up");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Sphere, MeshDistortMaterial } from "@react-three/drei";
 import * as THREE from "three";
@@ -31,9 +31,50 @@ function AnimatedOrb({ position, color, speed }: { position: [number, number, nu
 }
 
 export default function FloatingOrbs() {
+  const [isMounted, setIsMounted] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+
+    // Handle WebGL context lost/restored
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      console.log('WebGL context lost. Will attempt to restore.');
+    };
+
+    const handleContextRestored = () => {
+      console.log('WebGL context restored.');
+    };
+
+    if (canvasRef.current) {
+      canvasRef.current.addEventListener('webglcontextlost', handleContextLost);
+      canvasRef.current.addEventListener('webglcontextrestored', handleContextRestored);
+    }
+
+    return () => {
+      if (canvasRef.current) {
+        canvasRef.current.removeEventListener('webglcontextlost', handleContextLost);
+        canvasRef.current.removeEventListener('webglcontextrestored', handleContextRestored);
+      }
+    };
+  }, []);
+
+  if (!isMounted) return null;
+
   return (
     <div className="absolute inset-0 -z-10 opacity-30">
-      <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
+      <Canvas
+        camera={{ position: [0, 0, 8], fov: 50 }}
+        onCreated={({ gl }) => {
+          canvasRef.current = gl.domElement;
+        }}
+        gl={{
+          powerPreference: "low-power",
+          antialias: false,
+          preserveDrawingBuffer: false
+        }}
+      >
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <pointLight position={[-10, -10, -5]} intensity={0.5} color="#3b82f6" />
