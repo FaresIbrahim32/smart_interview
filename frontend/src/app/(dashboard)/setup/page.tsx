@@ -114,11 +114,13 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>Set Up Your Profile</CardTitle>
-          <CardDescription>
+    <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/30">
+      <Card className="w-full max-w-2xl border-border/50 shadow-2xl bg-card/50 backdrop-blur-sm">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            Set Up Your Profile
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">
             Upload your resume and select your preferred interview language
           </CardDescription>
         </CardHeader>
@@ -166,9 +168,9 @@ export default function SetupPage() {
 
             {/* Detected Field Display */}
             {detectedField && (
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                <p className="text-sm font-medium">
-                  Based on your resume, you fall under: <span className="text-primary">{detectedField}</span>
+              <div className="p-4 rounded-lg bg-primary/20 border border-primary/30 backdrop-blur-sm">
+                <p className="text-sm font-medium text-foreground">
+                  Based on your resume, you fall under: <span className="text-primary font-bold">{detectedField}</span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   We'll prep you for interviews in this field
@@ -177,12 +179,14 @@ export default function SetupPage() {
             )}
 
             {error && (
-              <div className="text-sm text-destructive">{error}</div>
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                {error}
+              </div>
             )}
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-primary via-purple-600 to-cyan-600 hover:from-primary/90 hover:via-purple-600/90 hover:to-cyan-600/90 shadow-xl font-medium"
               disabled={!file || loading}
             >
               {loading ? "Processing..." : "Continue to Dashboard"}

@@ -91,16 +91,18 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen p-8 bg-gradient-to-br from-background via-background to-muted/30">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={handleGoBack}>
+          <Button variant="outline" onClick={handleGoBack} className="border-border/50 hover:bg-muted/50">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Interview Session</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+              Interview Session
+            </h1>
             <p className="text-muted-foreground">
               {language === "asl" ? "ASL Mode (Camera)" : `${language === "spanish" ? "Spanish" : "English"} Mode (Voice)`}
             </p>
@@ -109,17 +111,17 @@ export default function InterviewPage() {
 
         {/* Permission Request */}
         {!permissionGranted && (
-          <Card>
+          <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-foreground">
                 {language === "asl" ? (
-                  <Video className="h-5 w-5" />
+                  <Video className="h-5 w-5 text-primary" />
                 ) : (
-                  <Mic className="h-5 w-5" />
+                  <Mic className="h-5 w-5 text-primary" />
                 )}
                 {language === "asl" ? "Camera" : "Microphone"} Access Required
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-muted-foreground">
                 We need access to your {language === "asl" ? "camera to detect sign language" : "microphone to record your responses"}.
                 Your privacy is important - recordings are not saved without your permission.
               </CardDescription>
@@ -132,7 +134,7 @@ export default function InterviewPage() {
                   </p>
                 </div>
               )}
-              <Button onClick={requestPermissions} className="w-full">
+              <Button onClick={requestPermissions} className="w-full bg-gradient-to-r from-primary via-purple-600 to-cyan-600 hover:from-primary/90 hover:via-purple-600/90 hover:to-cyan-600/90 shadow-xl">
                 {language === "asl" ? (
                   <>
                     <Video className="mr-2 h-4 w-4" />
@@ -154,9 +156,9 @@ export default function InterviewPage() {
           <div className="space-y-6">
             {/* Video/Audio Display */}
             {language === "asl" && (
-              <Card>
+              <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
                 <CardContent className="p-6">
-                  <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                  <div className="relative aspect-video bg-black rounded-lg overflow-hidden border border-border/30">
                     <video
                       ref={videoRef}
                       autoPlay
@@ -165,7 +167,7 @@ export default function InterviewPage() {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute bottom-4 left-4 flex gap-2">
-                      <div className="px-3 py-1 rounded-full bg-green-500/90 text-white text-sm font-medium flex items-center gap-2">
+                      <div className="px-3 py-1 rounded-full bg-green-500/90 text-white text-sm font-medium flex items-center gap-2 shadow-lg">
                         <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                         Camera Active
                       </div>
@@ -176,15 +178,15 @@ export default function InterviewPage() {
             )}
 
             {language !== "asl" && (
-              <Card>
+              <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center py-12">
                     <div className="text-center space-y-4">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10">
+                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 border border-primary/30">
                         <Mic className="h-10 w-10 text-primary" />
                       </div>
                       <div className="space-y-2">
-                        <p className="font-medium">Microphone Active</p>
+                        <p className="font-medium text-foreground">Microphone Active</p>
                         <p className="text-sm text-muted-foreground">
                           Ready to record your responses
                         </p>
@@ -196,18 +198,18 @@ export default function InterviewPage() {
             )}
 
             {/* Interview Content Area */}
-            <Card>
+            <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle>Interview Ready</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-foreground">Interview Ready</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Your teammates are still working on integrating the question generation and TTS APIs.
                   This interface is ready to display questions and capture responses.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">
+                  <div className="p-4 rounded-lg bg-muted/50 border border-border/30">
+                    <p className="text-sm text-foreground">
                       <strong>Next steps for your team:</strong>
                     </p>
                     <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
@@ -220,7 +222,7 @@ export default function InterviewPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={stopMediaStream}>
+                    <Button variant="outline" onClick={stopMediaStream} className="border-border/50 hover:bg-muted/50">
                       {language === "asl" ? (
                         <>
                           <VideoOff className="mr-2 h-4 w-4" />

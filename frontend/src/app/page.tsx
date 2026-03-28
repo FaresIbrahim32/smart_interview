@@ -8,7 +8,7 @@ import { Sparkles, Brain, Mic, Video } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center p-8 overflow-hidden">
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-8 overflow-hidden bg-gradient-to-br from-background via-background to-muted/30">
       <FloatingOrbs />
 
       <div className="max-w-4xl text-center space-y-12 z-10">
@@ -22,17 +22,17 @@ export default function Home() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 backdrop-blur-sm"
           >
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">AI-Powered Interview Practice</span>
+            <span className="text-sm font-medium text-foreground">AI-Powered Interview Practice</span>
           </motion.div>
 
-          <h1 className="text-6xl md:text-7xl font-bold tracking-tight bg-gradient-to-r from-primary via-purple-500 to-cyan-500 bg-clip-text text-transparent">
+          <h1 className="text-6xl md:text-7xl font-bold tracking-tight bg-gradient-to-r from-primary via-purple-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-2xl">
             Smart Interview
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Master your interviews with personalized technical and behavioral questions tailored to your resume.
           </p>
         </motion.div>
@@ -44,33 +44,33 @@ export default function Home() {
           className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left"
         >
           <motion.div
-            whileHover={{ y: -5 }}
-            className="p-6 rounded-2xl bg-card border border-border backdrop-blur-sm"
+            whileHover={{ y: -5, scale: 1.02 }}
+            className="p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-md shadow-xl"
           >
             <Brain className="h-8 w-8 text-primary mb-3" />
-            <h3 className="font-semibold mb-2">Resume-Driven Questions</h3>
+            <h3 className="font-semibold mb-2 text-foreground">Resume-Driven Questions</h3>
             <p className="text-sm text-muted-foreground">
               Questions generated from your actual experience and skills
             </p>
           </motion.div>
 
           <motion.div
-            whileHover={{ y: -5 }}
-            className="p-6 rounded-2xl bg-card border border-border backdrop-blur-sm"
+            whileHover={{ y: -5, scale: 1.02 }}
+            className="p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-md shadow-xl"
           >
-            <Mic className="h-8 w-8 text-purple-500 mb-3" />
-            <h3 className="font-semibold mb-2">Voice & Text Support</h3>
+            <Mic className="h-8 w-8 text-purple-400 mb-3" />
+            <h3 className="font-semibold mb-2 text-foreground">Voice & Text Support</h3>
             <p className="text-sm text-muted-foreground">
               Practice in English or Spanish with AI voice feedback
             </p>
           </motion.div>
 
           <motion.div
-            whileHover={{ y: -5 }}
-            className="p-6 rounded-2xl bg-card border border-border backdrop-blur-sm"
+            whileHover={{ y: -5, scale: 1.02 }}
+            className="p-6 rounded-2xl bg-card/50 border border-border/50 backdrop-blur-md shadow-xl"
           >
-            <Video className="h-8 w-8 text-cyan-500 mb-3" />
-            <h3 className="font-semibold mb-2">ASL Support</h3>
+            <Video className="h-8 w-8 text-cyan-400 mb-3" />
+            <h3 className="font-semibold mb-2 text-foreground">ASL Support</h3>
             <p className="text-sm text-muted-foreground">
               Full American Sign Language interview practice
             </p>
@@ -85,14 +85,14 @@ export default function Home() {
         >
           <Link href="/login">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button variant="outline" size="lg" className="text-lg px-8">
+              <Button variant="outline" size="lg" className="text-lg px-8 border-border/50 hover:bg-muted/50 backdrop-blur-sm">
                 Log In
               </Button>
             </motion.div>
           </Link>
           <Link href="/signup">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90">
+              <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-primary via-purple-600 to-cyan-600 hover:from-primary/90 hover:via-purple-600/90 hover:to-cyan-600/90 shadow-2xl">
                 Get Started
               </Button>
             </motion.div>

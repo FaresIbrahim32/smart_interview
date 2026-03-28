@@ -66,11 +66,13 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create Account</CardTitle>
-          <CardDescription>
+    <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted">
+      <Card className="w-full max-w-md border-border/50 shadow-2xl bg-card/50 backdrop-blur-sm">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Create Account
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">
             Sign up to start practicing interviews with AI
           </CardDescription>
         </CardHeader>
@@ -114,16 +116,22 @@ export default function SignupPage() {
               </p>
             </div>
             {error && (
-              <div className="text-sm text-destructive">{error}</div>
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                {error}
+              </div>
             )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              disabled={loading}
+            >
               {loading ? "Creating account..." : "Sign Up"}
             </Button>
             <p className="text-sm text-center text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:underline">
+              <Link href="/login" className="text-primary hover:text-primary/80 hover:underline transition-colors">
                 Log in
               </Link>
             </p>

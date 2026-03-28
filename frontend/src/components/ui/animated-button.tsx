@@ -1,7 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Button, ButtonProps } from "./button";
+import { Button } from "./button";
+import type { Button as ButtonPrimitive } from "@base-ui/react/button";
+import type { VariantProps } from "class-variance-authority";
+import type { buttonVariants } from "./button";
+
+type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants>;
 
 export function AnimatedButton({ children, ...props }: ButtonProps) {
   return (

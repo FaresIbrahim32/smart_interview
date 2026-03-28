@@ -86,7 +86,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="relative min-h-screen p-8">
+    <div className="relative min-h-screen p-8 bg-gradient-to-br from-background via-background to-muted/30">
       <ParticleField />
       <div className="max-w-4xl mx-auto space-y-8 relative z-10">
         {/* Header */}
@@ -97,15 +97,15 @@ export default function DashboardPage() {
           className="flex items-center justify-between"
         >
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-xl">
               Welcome back{profile?.full_name ? `, ${profile.full_name}` : ""}!
             </h1>
             <p className="text-muted-foreground mt-2 flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-4 w-4 text-primary" />
               Ready to practice your interview skills?
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
+          <Button variant="outline" onClick={handleLogout} className="border-border/50 hover:bg-muted/50">
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
@@ -149,10 +149,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Start Interview Card */}
-        <AnimatedCard delay={0.3} className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5">
+        <AnimatedCard delay={0.3} className="border-primary/30 bg-gradient-to-br from-primary/10 to-purple-500/10 shadow-2xl">
           <CardHeader>
-            <CardTitle>Start Your Practice Interview</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-foreground">Start Your Practice Interview</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Get personalized technical and behavioral questions based on your resume.
               {profile?.language_preference === "asl" && " Camera access will be requested."}
               {profile?.language_preference !== "asl" && " Microphone access will be requested."}
@@ -160,7 +160,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <h3 className="font-medium">What to expect:</h3>
+              <h3 className="font-medium text-foreground">What to expect:</h3>
               <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                 <li>8 personalized technical questions from your resume</li>
                 <li>Behavioral questions covering common interview scenarios</li>
@@ -172,7 +172,7 @@ export default function DashboardPage() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Button
                 size="lg"
-                className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                className="w-full bg-gradient-to-r from-primary via-purple-600 to-cyan-600 hover:from-primary/90 hover:via-purple-600/90 hover:to-cyan-600/90 shadow-xl"
                 onClick={handleStartInterview}
               >
               {profile?.language_preference === "asl" ? (
@@ -193,7 +193,7 @@ export default function DashboardPage() {
 
         {/* Settings Link */}
         <div className="text-center">
-          <Button variant="ghost" onClick={() => router.push("/setup")}>
+          <Button variant="ghost" onClick={() => router.push("/setup")} className="hover:bg-muted/50">
             <Settings className="mr-2 h-4 w-4" />
             Update Settings
           </Button>
