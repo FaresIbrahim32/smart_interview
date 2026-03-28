@@ -18,8 +18,6 @@ import tempfile
 import base64
 from pathlib import Path
 from typing import List, Dict, Optional
-import numpy as np
-import cv2
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,9 +31,28 @@ from rag.parser import parse_resume
 from rag.vectorstore import build_vectorstore, query as query_vectorstore
 from rag.interviewer import get_client, generate_questions, generate_followup, translate_questions
 from tts import speak
-from asl.detector import HandDetector
-from asl.classifier import SignClassifier as GestureClassifier
-from asl.buffer import SignBuffer as LetterBuffer
+
+# Try to import ASL dependencies (optional)
+ASL_AVAILABLE = False
+HandDetector = None
+GestureClassifier = None
+LetterBuffer = None
+np = None
+cv2 = None
+
+try:
+    import numpy as np
+    import cv2
+    from asl.detector import HandDetector
+    from asl.classifier import SignClassifier as GestureClassifier
+    from asl.buffer import SignBuffer as LetterBuffer
+    ASL_AVAILABLE = True
+    print("✓ ASL dependencies loaded successfully")
+except ImportError as e:
+    print(f"⚠️  ASL dependencies not available: {e}")
+    print("   ASL mode will be disabled. To enable:")
+    print("   1. Install dependencies: pip install opencv-python mediapipe")
+    print("   2. Download ASL models to the asl/ directory")
 
 load_dotenv()
 
@@ -318,6 +335,16 @@ async def asl_recognition_websocket(websocket: WebSocket):
     Receives video frames, returns recognized letters/words.
     """
     await websocket.accept()
+
+    # Check if ASL is available
+    if not ASL_AVAILABLE:
+        await websocket.send_json({
+            "error": "ASL mode unavailable",
+            "message": "ASL model must be downloaded and dependencies installed",
+            "details": "Install opencv-python and mediapipe, then download ASL models"
+        })
+        await websocket.close()
+        return
 
     # Initialize ASL components
     detector = HandDetector(max_hands=1)
