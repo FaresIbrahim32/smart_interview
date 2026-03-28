@@ -11,3 +11,4 @@ streamlit-webrtc
 av
 scikit-learn
 elevenlabs
+PyPDF2
