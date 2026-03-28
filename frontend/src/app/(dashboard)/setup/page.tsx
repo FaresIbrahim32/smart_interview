@@ -50,7 +50,7 @@ export default function SetupPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {    
     e.preventDefault();
     if (!file || !userId) return;
 
@@ -93,16 +93,26 @@ export default function SetupPage() {
 
       if (dbError) throw dbError;
 
-      // Update profile with language preference and field
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          language_preference: language,
-          field: field,
-        })
-        .eq("user_id", userId);
+    // Check if profile exists
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-      if (profileError) throw profileError;
+    // Update or insert profile
+    const { error: profileError } = existingProfile
+      ? await supabase
+          .from("profiles")
+          .update({ language_preference: language, field: field })
+          .eq("user_id", userId)
+      : await supabase
+          .from("profiles")
+          .insert({ user_id: userId, language_preference: language, field: field });
+
+    if (profileError) throw profileError;
+
+    router.push("/dashboard");
 
       // Redirect to dashboard
       router.push("/dashboard");
