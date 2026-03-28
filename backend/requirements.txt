@@ -7,17 +7,18 @@ python-dotenv==1.0.1
 
 # RAG Dependencies
 groq==0.13.0
-chromadb==0.6.6
+chromadb>=0.5.0
 pdfplumber==0.11.4
 
 # TTS Dependencies
 requests==2.32.3
 
-# ASL Dependencies
-opencv-python==4.11.0.86
-mediapipe==0.10.20
-numpy==1.26.4
-scikit-learn==1.6.1
+# ASL Dependencies (optional - for ASL mode only)
+# mediapipe requires Python 3.8-3.12, not compatible with 3.13
+# opencv-python>=4.8.0
+# mediapipe>=0.10.0
+numpy>=1.24.0
+# scikit-learn>=1.3.0
 
 # CORS
 python-jose[cryptography]==3.3.0
