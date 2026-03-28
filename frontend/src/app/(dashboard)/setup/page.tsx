@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { generateUserFolderName, uploadResume } from "@/lib/supabase/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,15 +59,7 @@ export default function SetupPage() {
     setError(null);
 
     try {
-      // Upload resume to Supabase Storage
-      const fileName = `${userId}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("resumes")
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      // Call API to parse resume and detect field
+      // Call API to parse resume and detect field first to get user info
       const formData = new FormData();
       formData.append("file", file);
       formData.append("user_id", userId);
@@ -80,15 +73,33 @@ export default function SetupPage() {
         throw new Error("Failed to parse resume");
       }
 
-      const { field, parsed_data } = await response.json();
-      setDetectedField(field);
+      const { fields, chunks } = await response.json();
+
+      // Generate user-specific folder name
+      const folderName = generateUserFolderName(
+        fields.name,
+        fields.email,
+        userId
+      );
+
+      // Upload resume to Supabase Storage with user-specific folder structure
+      const { fileName, error: uploadError } = await uploadResume(file, folderName);
+
+      if (uploadError) throw uploadError;
+
+      // Detect field from parsed data (you can enhance this logic)
+      const detectedFieldValue = fields.summary ?
+        (fields.summary.toLowerCase().includes('software') || fields.summary.toLowerCase().includes('developer') ? 'Software Engineering' : 'General')
+        : 'General';
+
+      setDetectedField(detectedFieldValue);
 
       // Save to database
       const { error: dbError } = await supabase.from("resumes").insert({
         user_id: userId,
         file_path: fileName,
-        parsed_data,
-        detected_field: field,
+        parsed_data: { fields, chunks },
+        detected_field: detectedFieldValue,
       });
 
       if (dbError) throw dbError;
@@ -115,7 +126,7 @@ export default function SetupPage() {
     router.push("/dashboard");
 
       // Redirect to dashboard
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to upload resume");
     } finally {

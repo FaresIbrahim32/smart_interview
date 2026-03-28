@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = 'edge';
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -47,9 +45,9 @@ export default function LoginPage() {
           .single();
 
         if (!profile) {
-          router.push("/setup");
+          router.replace("/setup");
         } else {
-          router.push("/dashboard");
+          router.replace("/dashboard");
         }
       }
     } catch (err: any) {

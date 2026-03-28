@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import FloatingOrbs from "@/components/3d/FloatingOrbs";
 import { Sparkles, Brain, Mic, Video } from "lucide-react";
 
 export default function Home() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-8 overflow-hidden bg-gradient-to-br from-background via-background to-muted/30">
-      <FloatingOrbs />
+      {/* Animated gradient orbs with CSS */}
+      <div className="absolute inset-0 -z-10 opacity-30">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+      </div>
 
       <div className="max-w-4xl text-center space-y-12 z-10">
         <motion.div
@@ -83,14 +87,14 @@ export default function Home() {
           transition={{ delay: 0.6, duration: 0.8 }}
           className="flex gap-4 justify-center"
         >
-          <Link href="/login">
+          <Link href="/login" prefetch={true}>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button variant="outline" size="lg" className="text-lg px-8 border-border/50 hover:bg-muted/50 backdrop-blur-sm">
                 Log In
               </Button>
             </motion.div>
           </Link>
-          <Link href="/signup">
+          <Link href="/signup" prefetch={true}>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button size="lg" className="text-lg px-8 bg-gradient-to-r from-primary via-purple-600 to-cyan-600 hover:from-primary/90 hover:via-purple-600/90 hover:to-cyan-600/90 shadow-2xl">
                 Get Started
