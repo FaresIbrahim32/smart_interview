@@ -16,9 +16,18 @@ _INTERVIEWER_PERSONAS = [
     "a principal engineer who challenges assumptions and asks about trade-offs and alternatives",
 ]
 
+_LANG_INSTRUCTION = {
+    "spanish": "CRITICAL INSTRUCTION: You MUST write every single question in Spanish. No English whatsoever.",
+    "english": "",
+}
 
-def generate_questions(chunks: list[dict], client: Groq) -> list[str]:
-    # Shuffle chunks so different runs surface different details to the LLM
+_LANG_REMINDER = {
+    "spanish": "\nREMINDER: Every question above must be in Spanish. If any question is in English, rewrite it in Spanish.",
+    "english": "",
+}
+
+
+def generate_questions(chunks: list[dict], client: Groq, language: str = "english") -> list[str]:
     shuffled = chunks[:]
     random.shuffle(shuffled)
 
@@ -33,14 +42,17 @@ def generate_questions(chunks: list[dict], client: Groq) -> list[str]:
     )
 
     persona = random.choice(_INTERVIEWER_PERSONAS)
+    lang_note = _LANG_INSTRUCTION.get(language.lower(), "")
 
-    prompt = f"""You are {persona}, conducting a real technical interview.
+    lang_reminder = _LANG_REMINDER.get(language.lower(), "")
+
+    prompt = f"""{lang_note}
+You are {persona}, conducting a real technical interview.
 Based on the candidate's resume below, generate exactly 8 interview questions.
 
 Rules:
 - Reference specific project names, technologies, companies, or roles from the resume
 - Ask about implementation details, trade-offs, challenges, and outcomes
-- Let your persona shape the angle — what would YOU specifically want to dig into?
 - Make questions feel like a real human interviewer asked them (not generic)
 - Do NOT ask yes/no questions
 - Do NOT repeat similar questions
@@ -48,7 +60,7 @@ Rules:
 Resume:
 {resume_text}
 
-Return ONLY a numbered list (1. 2. 3. ...) of questions, nothing else."""
+Return ONLY a numbered list (1. 2. 3. ...) of questions, nothing else.{lang_reminder}"""
 
     resp = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -67,19 +79,54 @@ Return ONLY a numbered list (1. 2. 3. ...) of questions, nothing else."""
     return questions
 
 
-def generate_followup(question: str, answer: str, context: list[str], client: Groq) -> str:
+def translate_questions(questions: list[str], client: Groq, target_language: str) -> list[str]:
+    """Translate a list of questions into the target language."""
+    if target_language.lower() == "english":
+        return questions
+
+    lang_name = {"spanish": "Spanish"}.get(target_language.lower(), target_language)
+    numbered = "\n".join(f"{i+1}. {q}" for i, q in enumerate(questions))
+
+    prompt = f"""Translate these interview questions into {lang_name}.
+Keep them natural and conversational — as if a native {lang_name} speaker is asking them.
+Return ONLY the numbered list in the same format, nothing else.
+
+{numbered}"""
+
+    resp = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=800,
+    )
+
+    lines = resp.choices[0].message.content.strip().split("\n")
+    translated = []
+    for line in lines:
+        line = line.strip()
+        if line and line[0].isdigit() and ("." in line or ")" in line):
+            q = re.split(r"^[\d]+[.)]\s*", line, maxsplit=1)
+            translated.append(q[-1].strip() if len(q) > 1 else line)
+
+    # Fall back to originals if translation count mismatches
+    return translated if len(translated) == len(questions) else questions
+
+
+def generate_followup(question: str, answer: str, context: list[str], client: Groq, language: str = "english") -> str:
+    lang_note = _LANG_INSTRUCTION.get(language.lower(), "")
     context_text = "\n".join(context)
 
-    prompt = f"""You are a technical interviewer. The candidate just answered your question.
+    lang_reminder = _LANG_REMINDER.get(language.lower(), "")
+
+    prompt = f"""{lang_note}
+You are a technical interviewer. The candidate just answered your question.
 
 Your question: {question}
 Their answer: {answer}
 Resume context: {context_text}
 
-Ask ONE natural follow-up question that probes deeper. If their answer was vague, ask for specifics.
-If they were technical, explore edge cases or trade-offs. Keep it conversational.
-
-Return ONLY the follow-up question."""
+Ask ONE natural follow-up question that probes deeper. Keep it conversational.
+Return ONLY the follow-up question.{lang_reminder}"""
 
     resp = client.chat.completions.create(
         model="llama-3.3-70b-versatile",

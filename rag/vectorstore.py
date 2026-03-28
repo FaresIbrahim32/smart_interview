@@ -3,7 +3,7 @@ import uuid
 
 
 def build_vectorstore(chunks: list[dict]):
-    client = chromadb.Client()
+    client = chromadb.PersistentClient(path=".chroma_db")
     collection = client.get_or_create_collection(name="resume")
 
     texts = [c["text"] for c in chunks]

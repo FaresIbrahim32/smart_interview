@@ -19,3 +19,5 @@ model/*.task
 
 # Raw video recordings — personal content
 videos/*.mp4
+.chroma_db/
+.env
