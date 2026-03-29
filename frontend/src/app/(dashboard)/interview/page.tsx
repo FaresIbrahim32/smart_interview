@@ -1,17 +1,13 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Mic, MicOff, Send, Video, Volume2 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Mic, MicOff, Video, ArrowLeft, Send, Volume2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Language = "english" | "spanish" | "asl";
 type Phase = "loading" | "generating" | "interviewing" | "done";
@@ -47,31 +43,27 @@ export default function InterviewPage() {
   const sessionId = useRef(`session_${Date.now()}`);
 
   const [language, setLanguage] = useState<Language>("english");
-  const languageRef = useRef<Language>("english"); // always current, no stale closure
+  const languageRef = useRef<Language>("english");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [camGranted, setCamGranted] = useState(false);
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
 
-  // ── Separate question lists ─────────────────────────────────────────
   const [technicalQs, setTechnicalQs] = useState<string[]>([]);
   const [behavioralQs, setBehavioralQs] = useState<string[]>([]);
 
-  // ── Mode & per-mode state ───────────────────────────────────────────
   const [mode, setMode] = useState<Mode>("technical");
   const [techIndex, setTechIndex] = useState(0);
   const [behavIndex, setBehavIndex] = useState(0);
   const [followup, setFollowup] = useState<string | null>(null);
   const [inFollowup, setInFollowup] = useState(false);
 
-  // ── Answer ──────────────────────────────────────────────────────────
   const [answer, setAnswer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // ── Play base64 MP3 ─────────────────────────────────────────────────
   const playAudio = useCallback((b64: string) => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
@@ -81,31 +73,40 @@ export default function InterviewPage() {
     audioRef.current.play().catch(() => setIsSpeaking(false));
   }, []);
 
-  // ── ElevenLabs TTS — reads languageRef so it's never stale ──────────
   const speak = useCallback(
     async (text: string) => {
       if (languageRef.current === "asl" || !text) return;
       setIsSpeaking(true);
+
       try {
         const res = await fetch("/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text, language: languageRef.current }),
         });
+
         if (res.ok) {
           const { audio_base64 } = await res.json();
-          if (audio_base64) { playAudio(audio_base64); return; }
+          if (audio_base64) {
+            playAudio(audio_base64);
+            return;
+          }
         }
-      } catch { /* non-blocking */ }
+      } catch {
+        // Non-blocking.
+      }
+
       setIsSpeaking(false);
     },
-    [playAudio] // no language dep — reads ref directly
+    [playAudio]
   );
 
-  // ── Voice recording (Web Speech API) ────────────────────────────────
   const startRecording = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert("Speech recognition not supported in this browser."); return; }
+    if (!SR) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
 
     const rec = new SR();
     rec.continuous = false;
@@ -131,14 +132,17 @@ export default function InterviewPage() {
     setIsRecording(false);
   }, []);
 
-  // Keep ref in sync with state (covers any future language changes)
-  useEffect(() => { languageRef.current = language; }, [language]);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
 
-  // ── Load chunks + generate questions ────────────────────────────────
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
+      if (!user) {
+        router.push("/login");
+        return;
+      }
 
       const rawChunks = localStorage.getItem("interview_chunks");
       const lang = (localStorage.getItem("interview_language") as Language) || "english";
@@ -153,7 +157,6 @@ export default function InterviewPage() {
       const chunks = JSON.parse(rawChunks);
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-      // Init RAG vector store
       fetch(`${apiUrl}/interview/init-session?session_id=${sessionId.current}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -175,76 +178,75 @@ export default function InterviewPage() {
       }
 
       const { technical_questions, behavioral_questions } = await res.json();
-      const behavStrs: string[] = behavioral_questions.map(
+      const behavioralStrings: string[] = behavioral_questions.map(
         (q: { question: string }) => q.question
       );
 
       setTechnicalQs(technical_questions);
-      setBehavioralQs(behavStrs);
+      setBehavioralQs(behavioralStrings);
       setPhase("interviewing");
-      // Speak first technical question
       setTimeout(() => speak(technical_questions[0]), 500);
     };
 
     init();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router, speak]);
 
-  // ── Speak when question changes ──────────────────────────────────────
   useEffect(() => {
     if (phase !== "interviewing") return;
-    const q = inFollowup ? followup : currentQuestion;
-    if (q) speak(q);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [techIndex, behavIndex, mode, inFollowup, followup]);
+    const question = inFollowup ? followup : currentQuestion;
+    if (question) speak(question);
+  }, [techIndex, behavIndex, mode, inFollowup, followup, phase, speak]);
 
-  // ── ASL camera ──────────────────────────────────────────────────────
   const startCamera = async () => {
     try {
-      const ms = await navigator.mediaDevices.getUserMedia({ video: true });
-      setStream(ms);
+      const media = await navigator.mediaDevices.getUserMedia({ video: true });
+      setStream(media);
       setCamGranted(true);
-      if (videoRef.current) videoRef.current.srcObject = ms;
-    } catch { /* denied */ }
+      if (videoRef.current) videoRef.current.srcObject = media;
+    } catch {
+      // Permission denied.
+    }
   };
 
-  const stopMedia = () => {
-    stream?.getTracks().forEach((t) => t.stop());
+  const stopMedia = useCallback(() => {
+    stream?.getTracks().forEach((track) => track.stop());
     setStream(null);
     setCamGranted(false);
-  };
+  }, [stream]);
 
-  // ── Derived ─────────────────────────────────────────────────────────
+  useEffect(() => stopMedia, [stopMedia]);
+
   const questions = mode === "technical" ? technicalQs : behavioralQs;
   const index = mode === "technical" ? techIndex : behavIndex;
   const setIndex = mode === "technical" ? setTechIndex : setBehavIndex;
   const isDone = phase === "interviewing" && index >= questions.length && !inFollowup;
   const currentQuestion = questions[index] ?? null;
 
-  const advance = () => {
+  const advance = useCallback(() => {
     setFollowup(null);
     setInFollowup(false);
     setAnswer("");
-    setIndex((i) => i + 1);
-  };
+    setIndex((current) => current + 1);
+  }, [setIndex]);
 
-  const switchMode = (m: Mode) => {
-    setMode(m);
+  const switchMode = (nextMode: Mode) => {
+    setMode(nextMode);
     setFollowup(null);
     setInFollowup(false);
     setAnswer("");
-    // Speak first question of the new mode
-    const qs = m === "technical" ? technicalQs : behavioralQs;
-    const idx = m === "technical" ? techIndex : behavIndex;
-    setTimeout(() => speak(qs[idx]), 300);
+
+    const nextQuestions = nextMode === "technical" ? technicalQs : behavioralQs;
+    const nextIndex = nextMode === "technical" ? techIndex : behavIndex;
+    setTimeout(() => {
+      if (nextQuestions[nextIndex]) speak(nextQuestions[nextIndex]);
+    }, 300);
   };
 
-  // ── Submit ───────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!answer.trim() || isSubmitting) return;
+    if (!answer.trim() || isSubmitting || !currentQuestion) return;
     setIsSubmitting(true);
 
-    const question = inFollowup ? followup! : currentQuestion!;
+    const question = inFollowup && followup ? followup : currentQuestion;
 
     try {
       const res = await fetch("/api/interview", {
@@ -278,161 +280,201 @@ export default function InterviewPage() {
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-3xl mx-auto space-y-6">
-
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => { stopMedia(); router.push("/dashboard"); }}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
+    <div className="space-y-6">
+      <section className="rounded-[32px] border border-white/10 bg-[#0d141b] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Interview Session</h1>
-            <p className="text-sm text-muted-foreground">
-              {language === "asl" ? "ASL Mode" : "Voice powered by ElevenLabs · Groq RAG"}
+            <div className="inline-flex rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-emerald-100">
+              Interview session
+            </div>
+            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
+              Practice in a focused, live-session workspace.
+            </h1>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-400">
+              Move through technical and behavioral questions with voice playback,
+              optional speech-to-text, and ASL camera support when needed.
             </p>
           </div>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              stopMedia();
+              router.push("/dashboard");
+            }}
+            className="h-12 rounded-2xl border-white/10 bg-transparent px-5 text-slate-100 hover:bg-white/5"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
         </div>
+      </section>
 
-        {/* Loading / Generating */}
-        {(phase === "loading" || phase === "generating") && (
-          <Card>
-            <CardContent className="py-16 text-center space-y-4">
-              {error ? (
-                <>
-                  <p className="text-destructive font-medium">{error}</p>
-                  <Button onClick={() => router.push("/setup")}>Upload Resume</Button>
-                </>
-              ) : (
-                <>
-                  <div className="mx-auto w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-muted-foreground">
+      {(phase === "loading" || phase === "generating") && (
+        <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+          <CardContent className="space-y-5 py-16 text-center">
+            {error ? (
+              <>
+                <p className="text-lg font-medium text-red-200">{error}</p>
+                <Button
+                  className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                  onClick={() => router.push("/setup")}
+                >
+                  Upload Resume
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-emerald-300 border-t-transparent" />
+                <div>
+                  <p className="text-lg font-medium text-white">
+                    {phase === "generating" ? "Generating your question set" : "Loading session"}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-400">
                     {phase === "generating"
-                      ? "Groq is analyzing your resume chunks…"
-                      : "Loading…"}
+                      ? "Analyzing your resume content to create technical and behavioral prompts."
+                      : "Preparing your interview environment."}
                   </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Interview UI */}
-        {phase === "interviewing" && (
-          <div className="space-y-4">
+      {phase === "interviewing" && (
+        <div className="space-y-6">
+          <div className="grid gap-3 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => mode !== "technical" && switchMode("technical")}
+              className={`rounded-[28px] border p-5 text-left transition ${
+                mode === "technical"
+                  ? "border-emerald-300/30 bg-emerald-300/10"
+                  : "border-white/10 bg-[#0d141b] hover:bg-white/[0.04]"
+              }`}
+            >
+              <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Mode one</p>
+              <p className="mt-2 text-xl font-semibold text-white">Technical</p>
+              <p className="mt-2 text-sm text-slate-400">
+                {techIndex}/{technicalQs.length} completed
+              </p>
+            </button>
 
-            {/* Mode tabs */}
-            <div className="flex gap-2">
-              <Button
-                variant={mode === "technical" ? "default" : "outline"}
-                onClick={() => mode !== "technical" && switchMode("technical")}
-                className="flex-1"
-              >
-                Technical ({technicalQs.length})
-                {techIndex > 0 && <span className="ml-2 text-xs opacity-70">{techIndex}/{technicalQs.length}</span>}
-              </Button>
-              <Button
-                variant={mode === "behavioral" ? "default" : "outline"}
-                onClick={() => mode !== "behavioral" && switchMode("behavioral")}
-                className="flex-1"
-              >
-                Behavioral ({behavioralQs.length})
-                {behavIndex > 0 && <span className="ml-2 text-xs opacity-70">{behavIndex}/{behavioralQs.length}</span>}
-              </Button>
-            </div>
+            <button
+              type="button"
+              onClick={() => mode !== "behavioral" && switchMode("behavioral")}
+              className={`rounded-[28px] border p-5 text-left transition ${
+                mode === "behavioral"
+                  ? "border-cyan-300/30 bg-cyan-300/10"
+                  : "border-white/10 bg-[#0d141b] hover:bg-white/[0.04]"
+              }`}
+            >
+              <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Mode two</p>
+              <p className="mt-2 text-xl font-semibold text-white">Behavioral</p>
+              <p className="mt-2 text-sm text-slate-400">
+                {behavIndex}/{behavioralQs.length} completed
+              </p>
+            </button>
+          </div>
 
-            {/* All done for this mode */}
-            {isDone && (
-              <Card>
-                <CardContent className="py-10 text-center space-y-3">
-                  <p className="font-semibold">
-                    {mode === "technical" ? "Technical" : "Behavioral"} questions complete!
-                  </p>
+          {isDone && (
+            <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+              <CardContent className="space-y-4 py-12 text-center">
+                <p className="text-2xl font-semibold text-white">
+                  {mode === "technical" ? "Technical" : "Behavioral"} questions complete
+                </p>
+                <p className="text-slate-400">
+                  Switch modes to continue the session or head back to the dashboard.
+                </p>
+                <div className="flex flex-col justify-center gap-3 md:flex-row">
                   <Button
-                    onClick={() => switchMode(mode === "technical" ? "behavioral" : "technical")}
+                    className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                    onClick={() =>
+                      switchMode(mode === "technical" ? "behavioral" : "technical")
+                    }
                   >
                     Switch to {mode === "technical" ? "Behavioral" : "Technical"}
                   </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Active question */}
-            {!isDone && (
-              <>
-                {/* Progress */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>
-                      Question {index + 1} / {questions.length}
-                      {inFollowup ? " · Follow-up" : ""}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${
-                      mode === "technical" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
-                    }`}>
-                      {mode === "technical" ? "Technical (RAG)" : "Behavioral"}
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted">
-                    <div
-                      className="h-1.5 rounded-full bg-primary transition-all"
-                      style={{ width: `${((index + 1) / questions.length) * 100}%` }}
-                    />
-                  </div>
+                  <Button
+                    variant="outline"
+                    className="h-12 rounded-2xl border-white/10 bg-transparent px-6 text-slate-100 hover:bg-white/5"
+                    onClick={() => router.push("/dashboard")}
+                  >
+                    Return to Dashboard
+                  </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
 
-                {/* ASL camera */}
-                {language === "asl" && (
-                  <Card>
-                    <CardContent className="p-3">
-                      {!camGranted ? (
-                        <Button className="w-full" onClick={startCamera}>
-                          <Video className="mr-2 h-4 w-4" /> Grant Camera Access
-                        </Button>
-                      ) : (
-                        <div className="relative aspect-video bg-black rounded-md overflow-hidden">
-                          <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                          <span className="absolute bottom-3 left-3 px-2 py-1 rounded-full bg-green-500/90 text-white text-xs font-medium flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live
-                          </span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
+          {!isDone && (
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="space-y-6">
+                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                  <CardHeader className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                          Question progress
+                        </p>
+                        <p className="mt-2 text-sm text-slate-300">
+                          Question {index + 1} of {questions.length}
+                          {inFollowup ? " - Follow-up" : ""}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                          mode === "technical"
+                            ? "bg-emerald-300/12 text-emerald-100"
+                            : "bg-cyan-300/12 text-cyan-100"
+                        }`}
+                      >
+                        {mode === "technical" ? "Technical" : "Behavioral"}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/[0.06]">
+                      <div
+                        className="h-2 rounded-full bg-emerald-300 transition-all"
+                        style={{ width: `${((index + 1) / Math.max(questions.length, 1)) * 100}%` }}
+                      />
+                    </div>
+                  </CardHeader>
+                </Card>
 
-                {/* Question card */}
-                <Card>
-                  <CardHeader className="pb-3">
+                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                  <CardHeader className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <CardTitle className="text-base font-medium leading-snug flex-1">
+                      <CardTitle className="flex-1 text-2xl leading-tight text-white">
                         {inFollowup ? followup : currentQuestion}
                       </CardTitle>
-                      {language !== "asl" && (
+                      {language !== "asl" && currentQuestion && (
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="shrink-0"
+                          size="icon"
+                          className="h-11 w-11 rounded-2xl text-slate-300 hover:bg-white/[0.06] hover:text-white"
                           disabled={isSpeaking}
-                          onClick={() => speak(inFollowup ? followup! : currentQuestion!)}
+                          onClick={() => speak(inFollowup && followup ? followup : currentQuestion)}
                           title="Replay question"
                         >
-                          <Volume2 className={`h-4 w-4 ${isSpeaking ? "text-primary animate-pulse" : ""}`} />
+                          <Volume2
+                            className={`h-5 w-5 ${isSpeaking ? "animate-pulse text-emerald-200" : ""}`}
+                          />
                         </Button>
                       )}
                     </div>
                     {inFollowup && (
-                      <CardDescription>Follow-up on your previous answer</CardDescription>
+                      <CardDescription className="text-base text-slate-400">
+                        Follow-up based on your previous answer.
+                      </CardDescription>
                     )}
                   </CardHeader>
 
-                  <CardContent className="space-y-3">
-                    {/* Answer textarea */}
+                  <CardContent className="space-y-4">
                     <textarea
-                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder={isRecording ? "Listening…" : "Type or record your answer…"}
+                      className="min-h-[180px] w-full resize-none rounded-[24px] border border-white/10 bg-[#081017] px-4 py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      placeholder={isRecording ? "Listening..." : "Type or record your answer..."}
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
                       onKeyDown={(e) => {
@@ -440,56 +482,106 @@ export default function InterviewPage() {
                       }}
                     />
 
-                    {/* Controls row */}
-                    <div className="flex items-center gap-2">
-                      {/* Voice record button */}
+                    <div className="flex flex-wrap items-center gap-3">
                       {language !== "asl" && (
                         <Button
                           variant={isRecording ? "destructive" : "outline"}
-                          size="sm"
                           onClick={isRecording ? stopRecording : startRecording}
-                          className="shrink-0"
+                          className="h-11 rounded-2xl border-white/10 bg-transparent px-4 text-slate-100 hover:bg-white/5"
                         >
                           {isRecording ? (
-                            <><MicOff className="mr-1.5 h-4 w-4" />Stop</>
+                            <>
+                              <MicOff className="mr-2 h-4 w-4" />
+                              Stop Recording
+                            </>
                           ) : (
-                            <><Mic className="mr-1.5 h-4 w-4" />Record</>
+                            <>
+                              <Mic className="mr-2 h-4 w-4" />
+                              Record Answer
+                            </>
                           )}
                         </Button>
                       )}
 
                       <Button
                         variant="ghost"
-                        size="sm"
                         onClick={advance}
-                        className="text-muted-foreground"
+                        className="h-11 rounded-2xl px-4 text-slate-400 hover:bg-white/[0.05] hover:text-white"
                       >
                         Skip
                       </Button>
 
                       <Button
-                        className="ml-auto"
                         onClick={handleSubmit}
                         disabled={!answer.trim() || isSubmitting}
+                        className="ml-auto h-11 rounded-2xl bg-emerald-400 px-5 font-semibold text-[#092014] hover:bg-emerald-300"
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        {isSubmitting ? "Processing…" : inFollowup ? "Next Question" : "Submit"}
+                        {isSubmitting ? "Processing..." : inFollowup ? "Next Question" : "Submit"}
                       </Button>
                     </div>
 
                     {isRecording && (
-                      <p className="text-xs text-primary animate-pulse flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping inline-block" />
-                        Recording — speak your answer
+                      <p className="text-sm text-emerald-200">
+                        Recording is active. Speak naturally and we&apos;ll fill the answer box.
                       </p>
                     )}
                   </CardContent>
                 </Card>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+              </div>
+
+              <div className="space-y-6">
+                {language === "asl" && (
+                  <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                    <CardHeader>
+                      <CardTitle className="text-white">ASL camera panel</CardTitle>
+                      <CardDescription className="leading-7 text-slate-400">
+                        Enable camera access to practice in ASL mode.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {!camGranted ? (
+                        <Button
+                          className="h-12 w-full rounded-2xl bg-emerald-400 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                          onClick={startCamera}
+                        >
+                          <Video className="mr-2 h-5 w-5" />
+                          Grant Camera Access
+                        </Button>
+                      ) : (
+                        <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black">
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="aspect-video w-full object-cover"
+                          />
+                          <span className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-emerald-400/90 px-3 py-1 text-xs font-medium text-[#092014]">
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                            Live camera
+                          </span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                  <CardHeader>
+                    <CardTitle className="text-white">Session guide</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm leading-7 text-slate-400">
+                    <p>Technical questions are grounded in your uploaded resume content.</p>
+                    <p>Behavioral questions test clarity, decision-making, and communication.</p>
+                    <p>Use `Ctrl+Enter` or `Cmd+Enter` to submit quickly from the answer box.</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

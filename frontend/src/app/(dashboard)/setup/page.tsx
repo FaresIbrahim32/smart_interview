@@ -1,20 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+export const dynamic = "force-dynamic";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FileText, Languages, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Upload } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -32,13 +28,15 @@ export default function SetupPage() {
   }, [router]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.type !== "application/pdf") {
+    const nextFile = e.target.files?.[0];
+    if (!nextFile) return;
+
+    if (nextFile.type !== "application/pdf") {
       setError("Please select a PDF file");
       return;
     }
-    setFile(f);
+
+    setFile(nextFile);
     setError(null);
   };
 
@@ -50,7 +48,6 @@ export default function SetupPage() {
     setError(null);
 
     try {
-      // Send resume to backend for parsing → chunks go into RAG vector store
       const formData = new FormData();
       formData.append("file", file);
       formData.append("user_id", userId);
@@ -71,63 +68,71 @@ export default function SetupPage() {
         throw new Error("No content extracted from your resume. Try a different PDF.");
       }
 
-      // Store chunks in localStorage — RAG uses these, NOT Supabase
       localStorage.setItem("interview_chunks", JSON.stringify(chunks));
       localStorage.setItem("interview_language", language);
 
-      // Supabase is auth-only — just save language preference on the profile
       await supabase
         .from("profiles")
         .update({ language_preference: language })
         .eq("user_id", userId);
 
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>Set Up Your Interview</CardTitle>
-          <CardDescription>
-            Upload your resume — we'll extract it into our RAG system to generate
-            personalized questions.
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <Card className="rounded-[32px] border-white/10 bg-[#0d141b] shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+        <CardHeader className="space-y-4">
+          <div className="inline-flex w-fit rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-emerald-100">
+            Setup
+          </div>
+          <CardTitle className="text-3xl text-white">Upload the resume that will drive your session</CardTitle>
+          <CardDescription className="max-w-2xl text-base leading-7 text-slate-400">
+            We parse the PDF, save the chunks locally for your practice flow, and store
+            your language preference so screening and interviews stay aligned.
           </CardDescription>
         </CardHeader>
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="resume">Resume (PDF)</Label>
-              <div className="flex items-center gap-3">
+            <div className="rounded-[28px] border border-white/8 bg-[#0b1117] p-5">
+              <Label htmlFor="resume" className="text-slate-200">
+                Resume PDF
+              </Label>
+              <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
                 <Input
                   id="resume"
                   type="file"
                   accept=".pdf"
                   onChange={handleFileChange}
-                  className="cursor-pointer"
+                  className="h-12 cursor-pointer rounded-2xl border-white/10 bg-[#081017] text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-emerald-300/15 file:px-3 file:py-2 file:text-emerald-100 placeholder:text-slate-500 focus-visible:ring-emerald-300"
                 />
                 {file && (
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
-                    <Upload className="h-4 w-4" />
+                  <div className="inline-flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+                    <Upload className="h-4 w-4 text-emerald-300" />
                     {file.name}
-                  </span>
+                  </div>
                 )}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="language">Interview Language</Label>
+            <div className="rounded-[28px] border border-white/8 bg-[#0b1117] p-5">
+              <Label htmlFor="language" className="text-slate-200">
+                Interview language
+              </Label>
               <Select
                 id="language"
                 value={language}
                 onChange={(e) =>
                   setLanguage(e.target.value as "english" | "spanish" | "asl")
                 }
+                className="mt-3 h-12 rounded-2xl border-white/10 bg-[#081017] text-white focus-visible:ring-emerald-300"
               >
                 <option value="english">English (Voice)</option>
                 <option value="spanish">Spanish (Voice)</option>
@@ -135,20 +140,76 @@ export default function SetupPage() {
               </Select>
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && (
+              <p className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+                {error}
+              </p>
+            )}
 
-            <Button type="submit" className="w-full" disabled={!file || loading}>
-              {loading ? "Parsing resume…" : "Continue to Dashboard"}
-            </Button>
+            <div className="flex flex-col gap-3 md:flex-row">
+              <Button
+                type="submit"
+                className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                disabled={!file || loading}
+              >
+                {loading ? "Parsing resume..." : "Continue to Dashboard"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 rounded-2xl border-white/10 bg-transparent px-6 text-slate-100 hover:bg-white/5"
+                onClick={() => router.push("/dashboard")}
+              >
+                Cancel
+              </Button>
+            </div>
 
             {loading && (
-              <p className="text-xs text-center text-muted-foreground">
-                Sending resume to RAG backend — this takes a few seconds…
+              <p className="text-sm text-slate-400">
+                Sending your resume through the parsing pipeline. This usually takes a
+                few seconds.
               </p>
             )}
           </CardContent>
         </form>
       </Card>
+
+      <div className="space-y-4">
+        {[
+          {
+            icon: FileText,
+            title: "Resume parsing",
+            copy: "We extract content from your PDF and save the resulting chunks for your practice session.",
+          },
+          {
+            icon: Languages,
+            title: "Language profile",
+            copy: "The mode you choose here is reused by the interview flow and stored as your preference.",
+          },
+          {
+            icon: Upload,
+            title: "Re-upload anytime",
+            copy: "You can replace the resume later if you tailor it for a different role.",
+          },
+        ].map((item) => (
+          <Card
+            key={item.title}
+            className="rounded-[28px] border-white/10 bg-white/[0.03]"
+          >
+            <CardHeader className="space-y-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-300/12 text-emerald-200">
+                <item.icon className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-white">{item.title}</CardTitle>
+                <CardDescription className="mt-2 leading-7 text-slate-400">
+                  {item.copy}
+                </CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
