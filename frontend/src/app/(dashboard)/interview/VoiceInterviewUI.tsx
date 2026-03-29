@@ -311,34 +311,21 @@ export default function InterviewPage() {
 
   const startCamera = async () => {
     try {
-      console.log('Requesting camera access...');
       const media = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480 }
       });
-      console.log('Camera access granted');
       setStream(media);
-      if (videoRef.current) {
-        videoRef.current.srcObject = media;
-        // Force video to play
-        videoRef.current.play().catch(e => console.error('Video play error:', e));
-        
-        // Set a timeout fallback in case onloadedmetadata doesn't fire
-        const timeoutId = setTimeout(() => {
-          console.log('Timeout: marking camera as ready');
-          setCamGranted(true);
-        }, 2000);
-        
-        // Wait for video to be ready before marking camera as granted
-        videoRef.current.onloadedmetadata = () => {
-          clearTimeout(timeoutId);
-          console.log('Video metadata loaded, camera fully ready');
-          setCamGranted(true);
-        };
-      }
+      setCamGranted(true);
+
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = media;
+          videoRef.current.play().catch(console.error);
+        }
+      }, 100);
     } catch (error) {
-      console.error('Camera access error:', error);
       const message = error instanceof Error ? error.message : String(error);
-      alert(`Camera access failed: ${message || 'Unknown error'}. Please check your camera permissions and try again.`);
+      alert(`Camera access failed: ${message}`);
       setCamGranted(false);
     }
   };
