@@ -171,7 +171,7 @@ export default function InterviewPage() {
       });
 
       if (!res.ok) {
-        setError("Failed to generate questions. Is the backend running?");
+        setError("Failed to generate questions.");
         setPhase("loading");
         return;
       }
@@ -285,15 +285,15 @@ export default function InterviewPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="app-panel rounded-[32px] p-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+    <div className="space-y-8">
+      <section className="app-panel rounded-[32px] p-8 lg:p-10">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl space-y-4">
             <h1 className="text-4xl font-semibold tracking-[-0.04em] app-text-primary sm:text-5xl">
               Interview session
             </h1>
-            <p className="mt-4 max-w-2xl text-lg leading-8 app-text-muted">
-              Answer technical and behavioral questions using text, voice, or ASL mode.
+            <p className="text-lg leading-8 app-text-muted">
+              Work through technical and behavioral questions using text, voice, or ASL mode.
             </p>
           </div>
 
@@ -306,7 +306,7 @@ export default function InterviewPage() {
             className="app-secondary-button h-12 rounded-2xl px-5"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back to dashboard
           </Button>
         </div>
       </section>
@@ -317,23 +317,25 @@ export default function InterviewPage() {
             {error ? (
               <>
                 <p className="text-lg font-medium text-red-200">{error}</p>
-                <Button
-                  className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
-                  onClick={() => router.push("/setup")}
-                >
-                  Upload Resume
-                </Button>
+                <div className="flex justify-center">
+                  <Button
+                    className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
+                    onClick={() => router.push("/setup")}
+                  >
+                    Upload resume
+                  </Button>
+                </div>
               </>
             ) : (
               <>
                 <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[color:var(--button-bg)] border-t-transparent" />
-                <div>
+                <div className="space-y-2">
                   <p className="text-lg font-medium app-text-primary">
                     {phase === "generating" ? "Generating questions" : "Loading session"}
                   </p>
-                  <p className="mt-2 text-sm app-text-muted">
+                  <p className="text-sm app-text-muted">
                     {phase === "generating"
-                      ? "Analyzing your resume content to create technical and behavioral prompts."
+                      ? "We are building your interview questions from the uploaded resume."
                       : "Preparing the interview environment."}
                   </p>
                 </div>
@@ -344,8 +346,8 @@ export default function InterviewPage() {
       )}
 
       {phase === "interviewing" && (
-        <div className="space-y-6">
-          <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-8">
+          <div className="grid gap-4 md:grid-cols-2">
             {[
               { key: "technical", label: "Technical", count: `${techIndex}/${technicalQs.length}` },
               { key: "behavioral", label: "Behavioral", count: `${behavIndex}/${behavioralQs.length}` },
@@ -356,13 +358,15 @@ export default function InterviewPage() {
                   key={item.key}
                   type="button"
                   onClick={() => !active && switchMode(item.key as Mode)}
-                  className={`rounded-[28px] border p-5 text-left transition ${
+                  className={`rounded-[28px] border p-6 text-left transition ${
                     active ? "app-chip" : "app-panel"
                   }`}
                 >
-                  <p className="text-sm uppercase tracking-[0.18em] app-text-muted">Mode</p>
-                  <p className="mt-2 text-xl font-semibold app-text-primary">{item.label}</p>
-                  <p className="mt-2 text-sm app-text-muted">{item.count} completed</p>
+                  <div className="space-y-2">
+                    <p className="text-sm uppercase tracking-[0.18em] app-text-muted">Question set</p>
+                    <p className="text-xl font-semibold app-text-primary">{item.label}</p>
+                    <p className="text-sm app-text-muted">{item.count} completed</p>
+                  </div>
                 </button>
               );
             })}
@@ -370,25 +374,25 @@ export default function InterviewPage() {
 
           {isDone ? (
             <Card className="app-panel rounded-[32px]">
-              <CardContent className="space-y-4 py-12 text-center">
+              <CardContent className="space-y-5 py-12 text-center">
                 <p className="text-2xl font-semibold app-text-primary">
                   {mode === "technical" ? "Technical" : "Behavioral"} questions complete
                 </p>
-                <div className="flex flex-col justify-center gap-3 md:flex-row">
+                <div className="flex flex-col items-center justify-center gap-3 md:flex-row">
                   <Button
                     className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
                     onClick={() =>
                       switchMode(mode === "technical" ? "behavioral" : "technical")
                     }
                   >
-                    Switch Mode
+                    Switch mode
                   </Button>
                   <Button
                     variant="outline"
                     className="app-secondary-button h-12 rounded-2xl px-6"
                     onClick={() => router.push("/dashboard")}
                   >
-                    Return to Dashboard
+                    Back to dashboard
                   </Button>
                 </div>
               </CardContent>
@@ -399,11 +403,11 @@ export default function InterviewPage() {
                 <Card className="app-panel rounded-[32px]">
                   <CardHeader className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
+                      <div className="space-y-2">
                         <p className="text-xs uppercase tracking-[0.18em] app-text-muted">
                           Progress
                         </p>
-                        <p className="mt-2 text-sm app-text-secondary">
+                        <p className="text-sm app-text-secondary">
                           Question {index + 1} of {questions.length}
                           {inFollowup ? " - Follow-up" : ""}
                         </p>
@@ -447,7 +451,7 @@ export default function InterviewPage() {
                     )}
                   </CardHeader>
 
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-5">
                     <textarea
                       className="app-input min-h-[180px] w-full resize-none rounded-[24px] px-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       placeholder={isRecording ? "Listening..." : "Type or record your answer..."}
@@ -468,12 +472,12 @@ export default function InterviewPage() {
                           {isRecording ? (
                             <>
                               <MicOff className="mr-2 h-4 w-4" />
-                              Stop Recording
+                              Stop recording
                             </>
                           ) : (
                             <>
                               <Mic className="mr-2 h-4 w-4" />
-                              Record Answer
+                              Record answer
                             </>
                           )}
                         </Button>
@@ -493,7 +497,7 @@ export default function InterviewPage() {
                         className="app-primary-button ml-auto h-11 rounded-2xl px-5 font-semibold"
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        {isSubmitting ? "Processing..." : inFollowup ? "Next Question" : "Submit"}
+                        {isSubmitting ? "Processing..." : inFollowup ? "Next question" : "Submit"}
                       </Button>
                     </div>
                   </CardContent>
@@ -503,10 +507,10 @@ export default function InterviewPage() {
               <div className="space-y-6">
                 {language === "asl" && (
                   <Card className="app-panel rounded-[32px]">
-                    <CardHeader>
-                      <CardTitle className="app-text-primary">ASL camera panel</CardTitle>
+                    <CardHeader className="space-y-3">
+                      <CardTitle className="app-text-primary">ASL camera</CardTitle>
                       <CardDescription className="leading-7 app-text-muted">
-                        Enable camera access to practice in ASL mode.
+                        Turn on the camera to practice in ASL mode.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -516,7 +520,7 @@ export default function InterviewPage() {
                           onClick={startCamera}
                         >
                           <Video className="mr-2 h-5 w-5" />
-                          Grant Camera Access
+                          Turn on camera
                         </Button>
                       ) : (
                         <div className="relative overflow-hidden rounded-[24px] border border-[color:var(--panel-border)] bg-black">
@@ -529,7 +533,7 @@ export default function InterviewPage() {
                           />
                           <span className="app-chip absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium">
                             <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                            Live camera
+                            Live
                           </span>
                         </div>
                       )}
@@ -538,11 +542,14 @@ export default function InterviewPage() {
                 )}
 
                 <Card className="app-panel rounded-[32px]">
-                  <CardHeader>
-                    <CardTitle className="app-text-primary">Session guide</CardTitle>
+                  <CardHeader className="space-y-3">
+                    <CardTitle className="app-text-primary">Tips</CardTitle>
+                    <CardDescription className="app-text-muted">
+                      A few quick reminders while you practice.
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm leading-7 app-text-muted">
-                    <p>Technical questions are grounded in your uploaded resume content.</p>
+                  <CardContent className="space-y-3 text-sm leading-7 app-text-muted">
+                    <p>Technical questions are based on the resume you uploaded.</p>
                     <p>Behavioral questions focus on communication and decision-making.</p>
                     <p>Use Ctrl+Enter or Cmd+Enter to submit from the answer box.</p>
                   </CardContent>

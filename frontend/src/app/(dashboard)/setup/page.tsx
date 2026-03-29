@@ -31,7 +31,7 @@ export default function SetupPage() {
     if (!nextFile) return;
 
     if (nextFile.type !== "application/pdf") {
-      setError("Please select a PDF file");
+      setError("Please select a PDF file.");
       return;
     }
 
@@ -58,13 +58,13 @@ export default function SetupPage() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Backend could not parse the resume. Is it running?");
+        throw new Error(body.error || "We could not parse the resume.");
       }
 
       const { chunks } = await res.json();
 
       if (!chunks || chunks.length === 0) {
-        throw new Error("No content extracted from your resume. Try a different PDF.");
+        throw new Error("No content was extracted from the resume.");
       }
 
       localStorage.setItem("interview_chunks", JSON.stringify(chunks));
@@ -77,7 +77,7 @@ export default function SetupPage() {
 
       router.push("/dashboard");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
+      const message = err instanceof Error ? err.message : "Something went wrong.";
       setError(message);
     } finally {
       setLoading(false);
@@ -87,15 +87,17 @@ export default function SetupPage() {
   return (
     <Card className="app-panel rounded-[32px]">
       <CardHeader className="space-y-4">
-        <CardTitle className="text-3xl app-text-primary">Setup</CardTitle>
-        <CardDescription className="max-w-2xl text-base leading-7 app-text-muted">
-          Upload a resume PDF and choose the interview language used by the session flow.
-        </CardDescription>
+        <div className="max-w-2xl space-y-3">
+          <CardTitle className="text-3xl app-text-primary">Setup</CardTitle>
+          <CardDescription className="text-base leading-7 app-text-muted">
+            Upload your resume and choose the language you want to use during practice.
+          </CardDescription>
+        </div>
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
+        <CardContent className="space-y-8">
+          <div className="space-y-3">
             <Label htmlFor="resume" className="app-text-secondary">
               Resume PDF
             </Label>
@@ -109,7 +111,7 @@ export default function SetupPage() {
             {file && <p className="text-sm app-text-muted">{file.name}</p>}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="language" className="app-text-secondary">
               Interview language
             </Label>
@@ -131,13 +133,13 @@ export default function SetupPage() {
             </p>
           )}
 
-          <div className="flex flex-col gap-3 md:flex-row">
+          <div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
             <Button
               type="submit"
               className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
               disabled={!file || loading}
             >
-              {loading ? "Parsing resume..." : "Save and Continue"}
+              {loading ? "Saving..." : "Save and continue"}
             </Button>
             <Button
               type="button"
@@ -145,7 +147,7 @@ export default function SetupPage() {
               className="app-secondary-button h-12 rounded-2xl px-6"
               onClick={() => router.push("/dashboard")}
             >
-              Cancel
+              Back to dashboard
             </Button>
           </div>
         </CardContent>

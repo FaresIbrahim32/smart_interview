@@ -34,41 +34,21 @@ export default function DashboardLayout({
   return (
     <div className="app-shell">
       <div className="app-container">
-        <header className="app-header flex flex-col gap-5 pb-6 lg:flex-row lg:items-center lg:justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="app-panel-soft flex h-11 w-11 items-center justify-center rounded-2xl">
-              <Sparkles className="h-5 w-5 app-text-primary" />
-            </div>
-            <div>
-              <p className="text-lg font-semibold tracking-tight app-text-primary">
-                smart interview
-              </p>
-              <p className="text-sm app-text-muted">Interview preparation workspace</p>
-            </div>
-          </Link>
+        <header className="app-header flex flex-col gap-6 pb-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="app-panel-soft flex h-11 w-11 items-center justify-center rounded-2xl">
+                <Sparkles className="h-5 w-5 app-text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-lg font-semibold tracking-tight app-text-primary">
+                  smart interview
+                </p>
+                <p className="text-sm app-text-muted">Interview preparation workspace</p>
+              </div>
+            </Link>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <nav className="flex flex-wrap gap-2">
-              {navItems.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm transition ${
-                      active
-                        ? "app-chip"
-                        : "app-panel-soft app-text-secondary hover:opacity-90"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <ThemeToggle />
               <Button
                 variant="outline"
@@ -80,9 +60,29 @@ export default function DashboardLayout({
               </Button>
             </div>
           </div>
+
+          <nav className="flex flex-wrap items-center gap-2">
+            {navItems.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm transition ${
+                    active
+                      ? "app-chip"
+                      : "app-panel-soft app-text-secondary hover:opacity-90"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
         </header>
 
-        <div className="flex-1 py-8">{children}</div>
+        <div className="flex-1 py-10">{children}</div>
       </div>
     </div>
   );
