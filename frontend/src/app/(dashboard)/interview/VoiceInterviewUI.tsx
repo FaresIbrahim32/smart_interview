@@ -40,6 +40,7 @@ export default function InterviewPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
+  const syncedAslTextRef = useRef("");
   const sessionId = useRef<string>("");
   const aslSessionId = useRef<string>("");
   const aslIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -338,10 +339,38 @@ export default function InterviewPage() {
     }
   }, [language, camGranted, isAslProcessing, startAslProcessing, stopAslProcessing]);
 
+  useEffect(() => {
+    if (language !== "asl") {
+      syncedAslTextRef.current = "";
+      return;
+    }
+
+    setAnswer((previousAnswer) => {
+      const previousSyncedText = syncedAslTextRef.current;
+      const trimmedAnswer = previousAnswer.trimEnd();
+
+      if (previousSyncedText && trimmedAnswer.endsWith(previousSyncedText)) {
+        const prefix = trimmedAnswer.slice(0, trimmedAnswer.length - previousSyncedText.length).trimEnd();
+        syncedAslTextRef.current = aslText;
+        return aslText ? `${prefix ? `${prefix} ` : ""}${aslText}` : prefix;
+      }
+
+      if (!previousSyncedText) {
+        syncedAslTextRef.current = aslText;
+        return aslText ? `${trimmedAnswer ? `${trimmedAnswer} ` : ""}${aslText}` : previousAnswer;
+      }
+
+      syncedAslTextRef.current = aslText;
+      return previousAnswer;
+    });
+  }, [aslText, language]);
+
   const advance = useCallback(() => {
     setFollowup(null);
     setInFollowup(false);
     setAnswer("");
+    setAslText("");
+    syncedAslTextRef.current = "";
     setIndex((current) => current + 1);
   }, [setIndex]);
 
@@ -713,20 +742,10 @@ export default function InterviewPage() {
                             >
                               Clear Text
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                if (aslText.trim()) {
-                                  setAnswer((prev) => prev + (prev ? " " : "") + aslText.trim());
-                                  resetAslBuffer();
-                                }
-                              }}
-                              className="flex-1 rounded-xl border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
-                            >
-                              Add to Answer
-                            </Button>
                           </div>
+                          <p className="text-xs text-muted-foreground">
+                            Recognized ASL text now syncs into your answer box automatically.
+                          </p>
                         </div>
                       )}
                     </CardContent>

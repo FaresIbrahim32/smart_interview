@@ -1,18 +1,19 @@
 import time
 from collections import Counter
 
-CONFIRM_FRAMES = 18   # consecutive frames a sign must dominate before it's accepted
-AGREEMENT = 0.75      # fraction of recent frames that must agree
-MIN_CONFIDENCE = 0.60  # classifier confidence threshold
-SIGN_COOLDOWN = 0.9   # seconds between accepted signs
+CONFIRM_FRAMES = 8    # shorter confirmation window for real-time signing
+AGREEMENT = 0.6       # allow some frame noise while keeping stability
+MIN_CONFIDENCE = 0.45 # classifier confidence threshold
+SIGN_COOLDOWN = 0.35  # seconds between accepted signs
 
 
 class SignBuffer:
     """
     Accumulates per-frame sign predictions into a stable text string.
 
-    A sign is accepted when it dominates CONFIRM_FRAMES recent frames
-    with >= AGREEMENT fraction and the classifier confidence >= MIN_CONFIDENCE.
+    A sign is accepted when it dominates recent frames with enough agreement and
+    confidence. The buffer is intentionally tolerant of a few noisy frames so the
+    webcam flow still feels responsive.
     """
 
     def __init__(self):
@@ -21,10 +22,14 @@ class SignBuffer:
         self._last_accepted: float = 0.0
         self.last_sign: str = ""
 
-    def push(self, sign: str, confidence: float) -> bool:
+    def push(self, sign: str | None, confidence: float) -> bool:
         """Push a prediction. Returns True if a new sign was accepted."""
+        if not sign:
+            self._decay_recent()
+            return False
+
         if confidence < MIN_CONFIDENCE:
-            self._recent.clear()
+            self._decay_recent()
             return False
 
         self._recent.append(sign)
@@ -35,11 +40,11 @@ class SignBuffer:
             return False
 
         dominant, count = Counter(self._recent).most_common(1)[0]
-        if count / CONFIRM_FRAMES < AGREEMENT:
+        if count / len(self._recent) < AGREEMENT:
             return False
 
         now = time.time()
-        if now - self._last_accepted < SIGN_COOLDOWN:
+        if now - self._last_accepted < SIGN_COOLDOWN and dominant == self.last_sign:
             return False
 
         self._accept(dominant)
@@ -48,6 +53,10 @@ class SignBuffer:
         self.last_sign = dominant
         return True
 
+    def _decay_recent(self):
+        if self._recent:
+            self._recent.pop(0)
+
     def _accept(self, sign: str):
         if sign == "del":
             self.text = self.text[:-1]
@@ -55,10 +64,8 @@ class SignBuffer:
             if self.text and not self.text.endswith(" "):
                 self.text += " "
         elif len(sign) == 1:
-            # Single letter — append directly
             self.text += sign.lower()
         else:
-            # Full word (from fixed vocab)
             self.text = self.text.rstrip() + " " + sign.replace("_", " ") + " "
 
     def reset(self):
