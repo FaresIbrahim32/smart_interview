@@ -5,7 +5,7 @@ export const runtime = "edge";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,12 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-const benefits = [
-  "Save your resume-driven interview setup",
-  "Switch between English, Spanish, and ASL support",
-  "Return to screening and mock sessions anytime",
-];
 
 export default function SignupPage() {
   const router = useRouter();
@@ -71,6 +65,7 @@ export default function SignupPage() {
   };
 
   return (
+<<<<<<< HEAD
     <Card className="panel-surface w-full rounded-[32px]">
       <CardHeader className="space-y-3">
         <div className="section-label">Create account</div>
@@ -78,13 +73,24 @@ export default function SignupPage() {
         <CardDescription className="text-base leading-7 text-muted-foreground">
           Create your account, upload your resume, and move straight into realistic
           mock sessions built around your background.
+=======
+    <Card className="app-panel rounded-[32px] shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
+      <CardHeader className="space-y-3">
+        <CardTitle className="text-3xl app-text-primary">Create account</CardTitle>
+        <CardDescription className="text-base leading-7 app-text-muted">
+          Create an account to upload your resume and begin mock interviews.
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSignup}>
         <CardContent className="space-y-5">
           <div className="space-y-2">
+<<<<<<< HEAD
             <Label htmlFor="fullName" className="text-foreground">
+=======
+            <Label htmlFor="fullName" className="app-text-secondary">
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
               Full name
             </Label>
             <Input
@@ -94,12 +100,20 @@ export default function SignupPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
+<<<<<<< HEAD
               className="h-12 rounded-2xl border-border/70 bg-background/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+=======
+              className="app-input h-12 rounded-2xl"
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
             />
           </div>
 
           <div className="space-y-2">
+<<<<<<< HEAD
             <Label htmlFor="email" className="text-foreground">
+=======
+            <Label htmlFor="email" className="app-text-secondary">
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
               Email
             </Label>
             <Input
@@ -109,22 +123,35 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+<<<<<<< HEAD
               className="h-12 rounded-2xl border-border/70 bg-background/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+=======
+              className="app-input h-12 rounded-2xl"
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
             />
           </div>
 
           <div className="space-y-2">
+<<<<<<< HEAD
             <Label htmlFor="password" className="text-foreground">
+=======
+            <Label htmlFor="password" className="app-text-secondary">
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
               Password
             </Label>
             <Input
               id="password"
               type="password"
+<<<<<<< HEAD
               placeholder="........"
+=======
+              placeholder="********"
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+<<<<<<< HEAD
               className="h-12 rounded-2xl border-border/70 bg-background/70 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
             />
             <p className="text-xs text-muted-foreground">Use at least 6 characters.</p>
@@ -140,6 +167,11 @@ export default function SignupPage() {
                 </div>
               ))}
             </div>
+=======
+              className="app-input h-12 rounded-2xl"
+            />
+            <p className="text-xs app-text-muted">Use at least 6 characters.</p>
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
           </div>
 
           {error && (
@@ -152,17 +184,29 @@ export default function SignupPage() {
         <CardFooter className="flex flex-col items-stretch gap-4">
           <Button
             type="submit"
+<<<<<<< HEAD
             className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"
+=======
+            className="app-primary-button h-12 w-full rounded-2xl text-base font-semibold"
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
             disabled={loading}
           >
             {loading ? "Creating account..." : "Create Account"}
           </Button>
 
+<<<<<<< HEAD
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
               href="/login"
               className="inline-flex items-center gap-1 text-primary transition hover:text-foreground"
+=======
+          <p className="text-center text-sm app-text-muted">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1 app-text-secondary hover:opacity-80"
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
             >
               Log in <ArrowRight className="h-4 w-4" />
             </Link>

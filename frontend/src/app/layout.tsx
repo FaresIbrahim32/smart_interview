@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+<<<<<<< HEAD
 import { ThemeProvider } from "@/components/theme-provider";
+=======
+import { AppTransitionShell } from "@/components/theme/app-transition-shell";
+import { ThemeProvider } from "@/components/theme/theme-provider";
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -16,6 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+<<<<<<< HEAD
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body className={inter.className}>
         <script
@@ -33,6 +39,13 @@ export default function RootLayout({
           }}
         />
         <ThemeProvider>{children}</ThemeProvider>
+=======
+    <html lang="en" data-theme="dark">
+      <body className={inter.className}>
+        <ThemeProvider>
+          <AppTransitionShell>{children}</AppTransitionShell>
+        </ThemeProvider>
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
       </body>
     </html>
   );

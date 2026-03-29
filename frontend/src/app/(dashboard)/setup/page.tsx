@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Languages, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +31,7 @@ export default function SetupPage() {
     if (!nextFile) return;
 
     if (nextFile.type !== "application/pdf") {
-      setError("Please select a PDF file");
+      setError("Please select a PDF file.");
       return;
     }
 
@@ -59,13 +58,13 @@ export default function SetupPage() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Backend could not parse the resume. Is it running?");
+        throw new Error(body.error || "We could not parse the resume.");
       }
 
       const { chunks } = await res.json();
 
       if (!chunks || chunks.length === 0) {
-        throw new Error("No content extracted from your resume. Try a different PDF.");
+        throw new Error("No content was extracted from the resume.");
       }
 
       localStorage.setItem("interview_chunks", JSON.stringify(chunks));
@@ -78,7 +77,7 @@ export default function SetupPage() {
 
       router.push("/dashboard");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
+      const message = err instanceof Error ? err.message : "Something went wrong.";
       setError(message);
     } finally {
       setLoading(false);
@@ -86,6 +85,7 @@ export default function SetupPage() {
   };
 
   return (
+<<<<<<< HEAD
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
       <Card className="panel-surface rounded-[32px]">
         <CardHeader className="space-y-4">
@@ -94,9 +94,19 @@ export default function SetupPage() {
           <CardDescription className="max-w-2xl text-base leading-7 text-muted-foreground">
             We parse the PDF, save the chunks locally for your practice flow, and store
             your language preference so screening and interviews stay aligned.
+=======
+    <Card className="app-panel rounded-[32px]">
+      <CardHeader className="space-y-4">
+        <div className="max-w-2xl space-y-3">
+          <CardTitle className="text-3xl app-text-primary">Setup</CardTitle>
+          <CardDescription className="text-base leading-7 app-text-muted">
+            Upload your resume and choose the language you want to use during practice.
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
           </CardDescription>
-        </CardHeader>
+        </div>
+      </CardHeader>
 
+<<<<<<< HEAD
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
             <div className="rounded-[28px] border border-border/60 bg-secondary/60 p-5">
@@ -137,13 +147,47 @@ export default function SetupPage() {
                 <option value="asl">American Sign Language (Camera)</option>
               </Select>
             </div>
+=======
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-8">
+          <div className="space-y-3">
+            <Label htmlFor="resume" className="app-text-secondary">
+              Resume PDF
+            </Label>
+            <Input
+              id="resume"
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="app-input h-12 cursor-pointer rounded-2xl"
+            />
+            {file && <p className="text-sm app-text-muted">{file.name}</p>}
+          </div>
 
-            {error && (
-              <p className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
-                {error}
-              </p>
-            )}
+          <div className="space-y-3">
+            <Label htmlFor="language" className="app-text-secondary">
+              Interview language
+            </Label>
+            <Select
+              id="language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as "english" | "spanish" | "asl")}
+              className="app-input h-12 rounded-2xl"
+            >
+              <option value="english">English (Voice)</option>
+              <option value="spanish">Spanish (Voice)</option>
+              <option value="asl">American Sign Language (Camera)</option>
+            </Select>
+          </div>
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
 
+          {error && (
+            <p className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+              {error}
+            </p>
+          )}
+
+<<<<<<< HEAD
             <div className="flex flex-col gap-3 md:flex-row">
               <Button
                 type="submit"
@@ -203,5 +247,27 @@ export default function SetupPage() {
         </CardHeader>
       </Card>
     </div>
+=======
+          <div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
+            <Button
+              type="submit"
+              className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
+              disabled={!file || loading}
+            >
+              {loading ? "Saving..." : "Save and continue"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="app-secondary-button h-12 rounded-2xl px-6"
+              onClick={() => router.push("/dashboard")}
+            >
+              Back to dashboard
+            </Button>
+          </div>
+        </CardContent>
+      </form>
+    </Card>
+>>>>>>> 42efe1bb243244ae35ef5b91d278e6d44e8f85df
   );
 }
