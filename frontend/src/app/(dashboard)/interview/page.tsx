@@ -64,6 +64,14 @@ export default function InterviewPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // ASL state
+  const [aslText, setAslText] = useState("");
+  const [aslConfidence, setAslConfidence] = useState(0);
+  const [aslLastSign, setAslLastSign] = useState("");
+  const [isAslProcessing, setIsAslProcessing] = useState(false);
+  const aslSessionId = useRef(`asl_${Date.now()}`);
+  const aslIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const playAudio = useCallback((b64: string) => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const url = URL.createObjectURL(new Blob([bytes], { type: "audio/mpeg" }));
@@ -130,6 +138,74 @@ export default function InterviewPage() {
   const stopRecording = useCallback(() => {
     recognitionRef.current?.stop();
     setIsRecording(false);
+  }, []);
+
+  // ASL processing functions
+  const startAslProcessing = useCallback(() => {
+    if (!videoRef.current || !camGranted) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = 320;
+    canvas.height = 240;
+
+    const processFrame = async () => {
+      if (!videoRef.current || !ctx) return;
+
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      const frameData = canvas.toDataURL('image/jpeg', 0.8);
+
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${apiUrl}/asl/process-frame`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: aslSessionId.current,
+            frame: frameData,
+            width: canvas.width,
+            height: canvas.height
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setAslText(data.buffer || '');
+          setAslConfidence(data.confidence || 0);
+          setAslLastSign(data.last_sign || '');
+        }
+      } catch (error) {
+        console.error('ASL processing error:', error);
+      }
+    };
+
+    // Process frames at ~10 FPS
+    aslIntervalRef.current = setInterval(processFrame, 100);
+    setIsAslProcessing(true);
+  }, [camGranted]);
+
+  const stopAslProcessing = useCallback(() => {
+    if (aslIntervalRef.current) {
+      clearInterval(aslIntervalRef.current);
+      aslIntervalRef.current = null;
+    }
+    setIsAslProcessing(false);
+  }, []);
+
+  const resetAslBuffer = useCallback(async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await fetch(`${apiUrl}/asl/reset?session_id=${aslSessionId.current}`, {
+        method: 'POST'
+      });
+      setAslText('');
+      setAslLastSign('');
+      setAslConfidence(0);
+    } catch (error) {
+      console.error('ASL reset error:', error);
+    }
   }, []);
 
   useEffect(() => {
@@ -203,6 +279,11 @@ export default function InterviewPage() {
       setStream(media);
       setCamGranted(true);
       if (videoRef.current) videoRef.current.srcObject = media;
+
+      // Start ASL processing if in ASL mode
+      if (language === 'asl') {
+        setTimeout(startAslProcessing, 500); // Wait for video to load
+      }
     } catch {
       // Permission denied.
     }
@@ -212,9 +293,19 @@ export default function InterviewPage() {
     stream?.getTracks().forEach((track) => track.stop());
     setStream(null);
     setCamGranted(false);
-  }, [stream]);
+    stopAslProcessing();
+  }, [stream, stopAslProcessing]);
 
   useEffect(() => stopMedia, [stopMedia]);
+
+  // ASL processing effect
+  useEffect(() => {
+    if (language === 'asl' && camGranted && !isAslProcessing) {
+      startAslProcessing();
+    } else if (language !== 'asl' || !camGranted) {
+      stopAslProcessing();
+    }
+  }, [language, camGranted, isAslProcessing, startAslProcessing, stopAslProcessing]);
 
   const questions = mode === "technical" ? technicalQs : behavioralQs;
   const index = mode === "technical" ? techIndex : behavIndex;
@@ -534,33 +625,82 @@ export default function InterviewPage() {
                 {language === "asl" && (
                   <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
                     <CardHeader>
-                      <CardTitle className="text-white">ASL camera panel</CardTitle>
+                      <CardTitle className="text-white">ASL Recognition</CardTitle>
                       <CardDescription className="leading-7 text-slate-400">
-                        Enable camera access to practice in ASL mode.
+                        Sign into the camera. Use the controls below to manage your signing session.
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
                       {!camGranted ? (
                         <Button
                           className="h-12 w-full rounded-2xl bg-emerald-400 text-base font-semibold text-[#092014] hover:bg-emerald-300"
                           onClick={startCamera}
                         >
                           <Video className="mr-2 h-5 w-5" />
-                          Grant Camera Access
+                          Enable Camera for ASL
                         </Button>
                       ) : (
-                        <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black">
-                          <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            muted
-                            className="aspect-video w-full object-cover"
-                          />
-                          <span className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-emerald-400/90 px-3 py-1 text-xs font-medium text-[#092014]">
-                            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                            Live camera
-                          </span>
+                        <div className="space-y-4">
+                          <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black">
+                            <video
+                              ref={videoRef}
+                              autoPlay
+                              playsInline
+                              muted
+                              className="aspect-video w-full object-cover"
+                            />
+                            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
+                                isAslProcessing ? 'bg-emerald-400/90 text-[#092014]' : 'bg-red-400/90 text-white'
+                              }`}>
+                                <span className={`h-2 w-2 rounded-full ${isAslProcessing ? 'animate-pulse bg-white' : 'bg-red-200'}`} />
+                                {isAslProcessing ? 'Processing' : 'Inactive'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* ASL Recognition Display */}
+                          <div className="rounded-[16px] border border-white/10 bg-[#081017] p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-slate-300">Recognized Text</span>
+                              <span className="text-xs text-slate-500">
+                                Confidence: {Math.round(aslConfidence * 100)}%
+                              </span>
+                            </div>
+                            <div className="min-h-[60px] rounded bg-black/20 p-3 text-lg font-mono text-emerald-200">
+                              {aslText || <span className="text-slate-500">Start signing...</span>}
+                            </div>
+                            {aslLastSign && (
+                              <div className="mt-2 text-xs text-slate-400">
+                                Last sign: <span className="font-medium text-emerald-300">{aslLastSign}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* ASL Controls */}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={resetAslBuffer}
+                              className="flex-1 rounded-xl border-white/10 bg-transparent text-slate-300 hover:bg-white/5"
+                            >
+                              Clear Text
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (aslText.trim()) {
+                                  setAnswer(prev => prev + (prev ? ' ' : '') + aslText.trim());
+                                  resetAslBuffer();
+                                }
+                              }}
+                              className="flex-1 rounded-xl border-emerald-300/30 bg-emerald-300/10 text-emerald-200 hover:bg-emerald-300/20"
+                            >
+                              Add to Answer
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </CardContent>

@@ -16,6 +16,8 @@ import json
 import pickle
 import tempfile
 import base64
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -31,6 +33,9 @@ from rag.parser import parse_resume
 from rag.vectorstore import build_vectorstore, query as query_vectorstore
 from rag.interviewer import get_client, generate_questions, generate_followup, translate_questions
 from tts import speak
+
+# Global thread executor for ASL processing
+_asl_executor = ThreadPoolExecutor(max_workers=2)
 
 # Try to import ASL dependencies (optional)
 ASL_AVAILABLE = False
@@ -325,85 +330,122 @@ async def init_interview_session(session_id: str, chunks: List[Dict]):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Endpoint 4: ASL Recognition WebSocket
+# ASL Session Manager - Real-time Webcam Processing
 # ═══════════════════════════════════════════════════════════════════════════
 
-@app.websocket("/asl/recognize")
-async def asl_recognition_websocket(websocket: WebSocket):
-    """
-    Real-time ASL recognition via WebSocket.
-    Receives video frames, returns recognized letters/words.
-    """
-    await websocket.accept()
+class ASLSession:
+    """Real-time ASL sign recognition session (like ASLProcessor in Streamlit)"""
+    def __init__(self):
+        self.detector = HandDetector(max_hands=1)
+        self.classifier = GestureClassifier()
+        self.buffer = LetterBuffer()
+        self.frame_count = 0
 
-    # Check if ASL is available
+    def process_frame(self, frame_bgr: np.ndarray) -> dict:
+        """Process a single frame and return sign detection results"""
+        features, annotated = self.detector.extract(frame_bgr)
+        letter, confidence = None, 0.0
+
+        if features is not None:
+            letter, confidence = self.classifier.predict(features)
+            self.buffer.push(letter, confidence)
+
+        # Encode annotated frame every 3 frames for performance
+        annotated_b64 = None
+        self.frame_count += 1
+        if self.frame_count % 3 == 0:
+            _, buf_img = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 60])
+            annotated_b64 = base64.b64encode(buf_img).decode("utf-8")
+
+        return {
+            "letter": letter,
+            "confidence": float(confidence) if confidence else 0.0,
+            "buffer": self.buffer.text,
+            "last_sign": self.buffer.last_sign,
+            "annotated_frame": annotated_b64,
+        }
+
+    def reset(self):
+        """Clear the buffer"""
+        self.buffer.reset()
+        self.frame_count = 0
+
+    def close(self):
+        """Cleanup resources"""
+        self.detector.close()
+
+
+# Global session storage
+_asl_sessions: Dict[str, ASLSession] = {}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Endpoint 4: ASL Real-time Frame Processing
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ASLFrameRequest(BaseModel):
+    session_id: str
+    frame: str  # base64 encoded frame
+    width: int = 320
+    height: int = 240
+
+
+class ASLFrameResponse(BaseModel):
+    letter: Optional[str]
+    confidence: float
+    buffer: str
+    last_sign: str
+    annotated_frame: Optional[str]
+
+
+@app.post("/asl/process-frame", response_model=ASLFrameResponse)
+async def asl_process_frame(request: ASLFrameRequest):
+    """
+    Real-time ASL frame processing.
+    Accepts base64 video frame, detects hand landmarks, classifies sign.
+    """
     if not ASL_AVAILABLE:
-        await websocket.send_json({
-            "error": "ASL mode unavailable",
-            "message": "ASL model must be downloaded and dependencies installed",
-            "details": "Install opencv-python and mediapipe, then download ASL models"
-        })
-        await websocket.close()
-        return
-
-    # Initialize ASL components
-    detector = HandDetector(max_hands=1)
-    classifier = GestureClassifier()
-    buffer = LetterBuffer(window_size=5, min_confidence=0.6)
+        raise HTTPException(status_code=503, detail="ASL mode unavailable - dependencies not installed")
 
     try:
-        while True:
-            # Receive frame as base64 encoded image
-            data = await websocket.receive_json()
-            frame_data = data.get("frame")
+        # Get or create ASL session
+        if request.session_id not in _asl_sessions:
+            _asl_sessions[request.session_id] = ASLSession()
 
-            if not frame_data:
-                continue
+        session = _asl_sessions[request.session_id]
 
-            # Decode base64 frame
-            frame_bytes = base64.b64decode(frame_data.split(',')[1] if ',' in frame_data else frame_data)
-            nparr = np.frombuffer(frame_bytes, np.uint8)
-            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        # Decode frame
+        raw = request.frame.split(",")[1] if "," in request.frame else request.frame
+        frame_bytes = base64.b64decode(raw)
+        nparr = np.frombuffer(frame_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        frame = cv2.resize(frame, (request.width, request.height))
 
-            # Extract hand features
-            features, annotated = detector.extract(frame)
+        # Process frame in thread executor to avoid blocking
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, session.process_frame, frame)
 
-            if features is not None:
-                # Classify gesture
-                letter, confidence = classifier.predict(features)
+        return ASLFrameResponse(**result)
 
-                # Add to buffer and get word if complete
-                result = buffer.add(letter, confidence)
-
-                # Encode annotated frame back to base64
-                _, buffer_img = cv2.imencode('.jpg', annotated)
-                annotated_b64 = base64.b64encode(buffer_img).decode('utf-8')
-
-                # Send response
-                await websocket.send_json({
-                    "letter": letter,
-                    "confidence": float(confidence),
-                    "word": result.get("word") if result else None,
-                    "buffer": buffer.get_current_text(),
-                    "annotated_frame": annotated_b64
-                })
-            else:
-                # No hand detected
-                await websocket.send_json({
-                    "letter": None,
-                    "confidence": 0.0,
-                    "word": None,
-                    "buffer": buffer.get_current_text(),
-                    "annotated_frame": None
-                })
-
-    except WebSocketDisconnect:
-        detector.close()
-        print(f"ASL WebSocket disconnected")
     except Exception as e:
-        print(f"ASL WebSocket error: {e}")
-        detector.close()
-        await websocket.close()
+        raise HTTPException(status_code=500, detail=f"ASL frame processing error: {str(e)}")
+
+
+@app.post("/asl/reset")
+async def asl_reset_session(session_id: str):
+    """Reset ASL session buffer"""
+    if session_id in _asl_sessions:
+        _asl_sessions[session_id].reset()
+    return {"status": "success", "session_id": session_id}
+
+
+@app.post("/asl/cleanup")
+async def asl_cleanup_session(session_id: str):
+    """Clean up ASL session resources"""
+    if session_id in _asl_sessions:
+        _asl_sessions[session_id].close()
+        del _asl_sessions[session_id]
+    return {"status": "success", "session_id": session_id}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -432,7 +474,49 @@ async def tts_endpoint(request: TTSRequest):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Endpoint 6: ElevenLabs Signed URL (for Conversational AI voice agent)
+# Endpoint 6: Sign Question (ASL Video Generation)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class SignQuestionRequest(BaseModel):
+    text: str
+
+
+@app.post("/sign-question")
+async def sign_question_endpoint(request: SignQuestionRequest):
+    """
+    Generate ASL video for a question using Signapse API.
+    Returns video URL for signed question.
+    """
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    signapse_key = os.getenv("SIGNAPSE_API_KEY")
+    signapse_url = os.getenv("SIGNAPSE_API_URL")
+
+    if not signapse_key or not signapse_url:
+        raise HTTPException(status_code=503, detail="Signapse API not configured")
+
+    try:
+        import requests as _requests
+
+        resp = _requests.post(
+            signapse_url,
+            json={"text": request.text},
+            headers={"Authorization": f"Bearer {signapse_key}"}
+        )
+
+        if not resp.ok:
+            raise HTTPException(status_code=502, detail="Failed to generate ASL video")
+
+        data = resp.json()
+        return {"video_url": data.get("video_url")}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sign question error: {str(e)}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Endpoint 7: ElevenLabs Signed URL (for Conversational AI voice agent)
 # ═══════════════════════════════════════════════════════════════════════════
 
 @app.get("/elevenlabs/signed-url")
@@ -463,7 +547,7 @@ async def get_elevenlabs_signed_url():
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Endpoint 7: Resume Screening (ML models)
+# Endpoint 8: Resume Screening (ML models)
 # ═══════════════════════════════════════════════════════════════════════════
 
 _SKILLS_LIST = [
