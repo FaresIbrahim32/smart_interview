@@ -1,11 +1,15 @@
 import os
 import re
 import random
-from groq import Groq
+from openai import OpenAI
 
 
-def get_client() -> Groq:
-    return Groq(api_key=os.getenv("RAG_API"))
+def get_client() -> OpenAI:
+    """Get OpenRouter client (OpenAI-compatible API)"""
+    return OpenAI(
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        base_url="https://openrouter.ai/api/v1"
+    )
 
 
 _INTERVIEWER_PERSONAS = [
@@ -27,7 +31,7 @@ _LANG_REMINDER = {
 }
 
 
-def generate_questions(chunks: list[dict], client: Groq, language: str = "english") -> list[str]:
+def generate_questions(chunks: list[dict], client: OpenAI, language: str = "english") -> list[str]:
     shuffled = chunks[:]
     random.shuffle(shuffled)
 
@@ -63,7 +67,7 @@ Resume:
 Return ONLY a numbered list (1. 2. 3. ...) of questions, nothing else.{lang_reminder}"""
 
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         temperature=1.0,
         max_tokens=800,
@@ -79,7 +83,7 @@ Return ONLY a numbered list (1. 2. 3. ...) of questions, nothing else.{lang_remi
     return questions
 
 
-def translate_questions(questions: list[str], client: Groq, target_language: str) -> list[str]:
+def translate_questions(questions: list[str], client: OpenAI, target_language: str) -> list[str]:
     """Translate a list of questions into the target language."""
     if target_language.lower() == "english":
         return questions
@@ -94,7 +98,7 @@ Return ONLY the numbered list in the same format, nothing else.
 {numbered}"""
 
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=800,
@@ -112,7 +116,7 @@ Return ONLY the numbered list in the same format, nothing else.
     return translated if len(translated) == len(questions) else questions
 
 
-def generate_followup(question: str, answer: str, context: list[str], client: Groq, language: str = "english") -> str:
+def generate_followup(question: str, answer: str, context: list[str], client: OpenAI, language: str = "english") -> str:
     lang_note = _LANG_INSTRUCTION.get(language.lower(), "")
     context_text = "\n".join(context)
 
@@ -129,7 +133,7 @@ Ask ONE natural follow-up question that probes deeper. Keep it conversational.
 Return ONLY the follow-up question.{lang_reminder}"""
 
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.9,
         max_tokens=150,
