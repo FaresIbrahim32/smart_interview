@@ -71,26 +71,23 @@ export default function ScreenPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] border border-white/10 bg-[#0d141b] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
-        <div className="inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-cyan-100">
-          Resume screener
-        </div>
-        <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
+      <section className="app-panel rounded-[32px] p-8">
+        <h1 className="text-4xl font-semibold tracking-[-0.04em] app-text-primary sm:text-5xl">
           Analyze your resume before you interview.
         </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-400">
+        <p className="mt-4 max-w-2xl text-lg leading-8 app-text-muted">
           This pass predicts resume category, recommends a role fit, and extracts key
           details so you can calibrate the mock session that follows.
         </p>
       </section>
 
       {loading && (
-        <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+        <Card className="app-panel rounded-[32px]">
           <CardContent className="space-y-5 py-16 text-center">
-            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-emerald-300 border-t-transparent" />
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[color:var(--button-bg)] border-t-transparent" />
             <div>
-              <p className="text-lg font-medium text-white">Running resume analysis</p>
-              <p className="mt-2 text-sm text-slate-400">
+              <p className="text-lg font-medium app-text-primary">Running resume analysis</p>
+              <p className="mt-2 text-sm app-text-muted">
                 We&apos;re screening the uploaded resume and generating a recommendation.
               </p>
             </div>
@@ -103,7 +100,7 @@ export default function ScreenPage() {
           <CardContent className="space-y-4 py-12 text-center">
             <p className="text-lg font-medium text-red-100">{error}</p>
             <Button
-              className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+              className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
               onClick={() => router.push("/setup")}
             >
               Upload Resume
@@ -115,41 +112,41 @@ export default function ScreenPage() {
       {!loading && result && (
         <div className="space-y-6">
           <section className="grid gap-5 md:grid-cols-2">
-            <Card className="rounded-[28px] border-white/10 bg-[#0d141b]">
+            <Card className="app-panel rounded-[28px]">
               <CardHeader className="space-y-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/12 text-cyan-200">
-                  <Tag className="h-5 w-5" />
+                <div className="app-panel-soft flex h-11 w-11 items-center justify-center rounded-2xl">
+                  <Tag className="h-5 w-5 app-text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg text-white">Resume category</CardTitle>
-                  <p className="mt-2 text-3xl font-semibold text-white">{result.category}</p>
+                  <CardTitle className="text-lg app-text-primary">Resume category</CardTitle>
+                  <p className="mt-2 text-3xl font-semibold app-text-primary">{result.category}</p>
                 </div>
-                <CardDescription className="leading-7 text-slate-400">
+                <CardDescription className="leading-7 app-text-muted">
                   Predicted by the screening model from the contents of your uploaded resume.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            <Card className="rounded-[28px] border-white/10 bg-[#0d141b]">
+            <Card className="app-panel rounded-[28px]">
               <CardHeader className="space-y-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-300/12 text-emerald-200">
-                  <Briefcase className="h-5 w-5" />
+                <div className="app-panel-soft flex h-11 w-11 items-center justify-center rounded-2xl">
+                  <Briefcase className="h-5 w-5 app-text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg text-white">Recommended role</CardTitle>
-                  <p className="mt-2 text-3xl font-semibold text-white">{result.recommended_job}</p>
+                  <CardTitle className="text-lg app-text-primary">Recommended role</CardTitle>
+                  <p className="mt-2 text-3xl font-semibold app-text-primary">{result.recommended_job}</p>
                 </div>
-                <CardDescription className="leading-7 text-slate-400">
+                <CardDescription className="leading-7 app-text-muted">
                   Best-fit role surfaced by the recommendation pass.
                 </CardDescription>
               </CardHeader>
             </Card>
           </section>
 
-          <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+          <Card className="app-panel rounded-[32px]">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <User className="h-5 w-5 text-emerald-300" />
+              <CardTitle className="flex items-center gap-2 app-text-primary">
+                <User className="h-5 w-5" />
                 Extracted contact info
               </CardTitle>
             </CardHeader>
@@ -161,28 +158,28 @@ export default function ScreenPage() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-[24px] border border-white/8 bg-[#0b1117] p-4"
+                  className="app-panel-soft rounded-[24px] p-4"
                 >
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.05] text-slate-300">
+                  <div className="app-panel flex mb-3 h-10 w-10 items-center justify-center rounded-2xl">
                     <item.icon className="h-4 w-4" />
                   </div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                  <p className="text-xs uppercase tracking-[0.18em] app-text-muted">
                     {item.label}
                   </p>
-                  <p className="mt-2 text-base font-medium text-white">{item.value}</p>
+                  <p className="mt-2 text-base font-medium app-text-primary">{item.value}</p>
                 </div>
               ))}
             </CardContent>
           </Card>
 
           {result.skills.length > 0 && (
-            <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+            <Card className="app-panel rounded-[32px]">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Tag className="h-5 w-5 text-cyan-200" />
+                <CardTitle className="flex items-center gap-2 app-text-primary">
+                  <Tag className="h-5 w-5" />
                   Skills detected
                 </CardTitle>
-                <CardDescription className="leading-7 text-slate-400">
+                <CardDescription className="leading-7 app-text-muted">
                   {result.skills.length} matched skills found in your resume.
                 </CardDescription>
               </CardHeader>
@@ -190,7 +187,7 @@ export default function ScreenPage() {
                 {result.skills.map((skill) => (
                   <span
                     key={skill}
-                    className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-sm font-medium text-emerald-100"
+                    className="app-chip rounded-full px-3 py-1.5 text-sm font-medium"
                   >
                     {skill}
                   </span>
@@ -200,10 +197,10 @@ export default function ScreenPage() {
           )}
 
           {result.education.length > 0 && (
-            <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+            <Card className="app-panel rounded-[32px]">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <GraduationCap className="h-5 w-5 text-amber-200" />
+                <CardTitle className="flex items-center gap-2 app-text-primary">
+                  <GraduationCap className="h-5 w-5" />
                   Education fields detected
                 </CardTitle>
               </CardHeader>
@@ -211,7 +208,7 @@ export default function ScreenPage() {
                 {result.education.map((item) => (
                   <span
                     key={item}
-                    className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1.5 text-sm font-medium text-amber-100"
+                    className="app-panel-soft rounded-full px-3 py-1.5 text-sm font-medium app-text-secondary"
                   >
                     {item}
                   </span>
@@ -222,21 +219,21 @@ export default function ScreenPage() {
 
           <div className="flex flex-col gap-3 md:flex-row">
             <Button
-              className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+              className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
               onClick={() => router.push("/interview")}
             >
               Start Interview
             </Button>
             <Button
               variant="outline"
-              className="h-12 rounded-2xl border-white/10 bg-transparent px-6 text-slate-100 hover:bg-white/5"
+              className="app-secondary-button h-12 rounded-2xl px-6"
               onClick={() => router.push("/setup")}
             >
               Re-upload Resume
             </Button>
             <Button
               variant="outline"
-              className="h-12 rounded-2xl border-white/10 bg-transparent px-6 text-slate-100 hover:bg-white/5"
+              className="app-secondary-button h-12 rounded-2xl px-6"
               onClick={() => router.push("/dashboard")}
             >
               <ScanSearch className="mr-2 h-4 w-4" />

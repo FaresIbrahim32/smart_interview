@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Mic, MicOff, Send, Video, Volume2 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Language = "english" | "spanish" | "asl";
-type Phase = "loading" | "generating" | "interviewing" | "done";
+type Phase = "loading" | "generating" | "interviewing";
 type Mode = "technical" | "behavioral";
 
 interface ISpeechRecognition extends EventTarget {
@@ -52,7 +52,6 @@ export default function InterviewPage() {
 
   const [technicalQs, setTechnicalQs] = useState<string[]>([]);
   const [behavioralQs, setBehavioralQs] = useState<string[]>([]);
-
   const [mode, setMode] = useState<Mode>("technical");
   const [techIndex, setTechIndex] = useState(0);
   const [behavIndex, setBehavIndex] = useState(0);
@@ -178,24 +177,32 @@ export default function InterviewPage() {
       }
 
       const { technical_questions, behavioral_questions } = await res.json();
-      const behavioralStrings: string[] = behavioral_questions.map(
+      const nextBehavioralQuestions: string[] = behavioral_questions.map(
         (q: { question: string }) => q.question
       );
 
       setTechnicalQs(technical_questions);
-      setBehavioralQs(behavioralStrings);
+      setBehavioralQs(nextBehavioralQuestions);
       setPhase("interviewing");
-      setTimeout(() => speak(technical_questions[0]), 500);
+
+      if (technical_questions[0]) {
+        setTimeout(() => speak(technical_questions[0]), 500);
+      }
     };
 
     init();
   }, [router, speak]);
 
+  const questions = mode === "technical" ? technicalQs : behavioralQs;
+  const index = mode === "technical" ? techIndex : behavIndex;
+  const currentQuestion = questions[index] ?? null;
+  const isDone = phase === "interviewing" && index >= questions.length && !inFollowup;
+
   useEffect(() => {
     if (phase !== "interviewing") return;
     const question = inFollowup ? followup : currentQuestion;
     if (question) speak(question);
-  }, [techIndex, behavIndex, mode, inFollowup, followup, phase, speak]);
+  }, [phase, followup, inFollowup, currentQuestion, speak]);
 
   const startCamera = async () => {
     try {
@@ -216,30 +223,27 @@ export default function InterviewPage() {
 
   useEffect(() => stopMedia, [stopMedia]);
 
-  const questions = mode === "technical" ? technicalQs : behavioralQs;
-  const index = mode === "technical" ? techIndex : behavIndex;
-  const setIndex = mode === "technical" ? setTechIndex : setBehavIndex;
-  const isDone = phase === "interviewing" && index >= questions.length && !inFollowup;
-  const currentQuestion = questions[index] ?? null;
-
   const advance = useCallback(() => {
     setFollowup(null);
     setInFollowup(false);
     setAnswer("");
-    setIndex((current) => current + 1);
-  }, [setIndex]);
+    if (mode === "technical") {
+      setTechIndex((current) => current + 1);
+      return;
+    }
+    setBehavIndex((current) => current + 1);
+  }, [mode]);
 
   const switchMode = (nextMode: Mode) => {
     setMode(nextMode);
     setFollowup(null);
     setInFollowup(false);
     setAnswer("");
-
     const nextQuestions = nextMode === "technical" ? technicalQs : behavioralQs;
     const nextIndex = nextMode === "technical" ? techIndex : behavIndex;
-    setTimeout(() => {
-      if (nextQuestions[nextIndex]) speak(nextQuestions[nextIndex]);
-    }, 300);
+    if (nextQuestions[nextIndex]) {
+      setTimeout(() => speak(nextQuestions[nextIndex]), 300);
+    }
   };
 
   const handleSubmit = async () => {
@@ -282,18 +286,14 @@ export default function InterviewPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] border border-white/10 bg-[#0d141b] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+      <section className="app-panel rounded-[32px] p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="inline-flex rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-emerald-100">
+            <h1 className="text-4xl font-semibold tracking-[-0.04em] app-text-primary sm:text-5xl">
               Interview session
-            </div>
-            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
-              Practice in a focused, live-session workspace.
             </h1>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-400">
-              Move through technical and behavioral questions with voice playback,
-              optional speech-to-text, and ASL camera support when needed.
+            <p className="mt-4 max-w-2xl text-lg leading-8 app-text-muted">
+              Answer technical and behavioral questions using text, voice, or ASL mode.
             </p>
           </div>
 
@@ -303,7 +303,7 @@ export default function InterviewPage() {
               stopMedia();
               router.push("/dashboard");
             }}
-            className="h-12 rounded-2xl border-white/10 bg-transparent px-5 text-slate-100 hover:bg-white/5"
+            className="app-secondary-button h-12 rounded-2xl px-5"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -312,13 +312,13 @@ export default function InterviewPage() {
       </section>
 
       {(phase === "loading" || phase === "generating") && (
-        <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+        <Card className="app-panel rounded-[32px]">
           <CardContent className="space-y-5 py-16 text-center">
             {error ? (
               <>
                 <p className="text-lg font-medium text-red-200">{error}</p>
                 <Button
-                  className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                  className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
                   onClick={() => router.push("/setup")}
                 >
                   Upload Resume
@@ -326,15 +326,15 @@ export default function InterviewPage() {
               </>
             ) : (
               <>
-                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-emerald-300 border-t-transparent" />
+                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[color:var(--button-bg)] border-t-transparent" />
                 <div>
-                  <p className="text-lg font-medium text-white">
-                    {phase === "generating" ? "Generating your question set" : "Loading session"}
+                  <p className="text-lg font-medium app-text-primary">
+                    {phase === "generating" ? "Generating questions" : "Loading session"}
                   </p>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="mt-2 text-sm app-text-muted">
                     {phase === "generating"
                       ? "Analyzing your resume content to create technical and behavioral prompts."
-                      : "Preparing your interview environment."}
+                      : "Preparing the interview environment."}
                   </p>
                 </div>
               </>
@@ -346,60 +346,46 @@ export default function InterviewPage() {
       {phase === "interviewing" && (
         <div className="space-y-6">
           <div className="grid gap-3 md:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => mode !== "technical" && switchMode("technical")}
-              className={`rounded-[28px] border p-5 text-left transition ${
-                mode === "technical"
-                  ? "border-emerald-300/30 bg-emerald-300/10"
-                  : "border-white/10 bg-[#0d141b] hover:bg-white/[0.04]"
-              }`}
-            >
-              <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Mode one</p>
-              <p className="mt-2 text-xl font-semibold text-white">Technical</p>
-              <p className="mt-2 text-sm text-slate-400">
-                {techIndex}/{technicalQs.length} completed
-              </p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => mode !== "behavioral" && switchMode("behavioral")}
-              className={`rounded-[28px] border p-5 text-left transition ${
-                mode === "behavioral"
-                  ? "border-cyan-300/30 bg-cyan-300/10"
-                  : "border-white/10 bg-[#0d141b] hover:bg-white/[0.04]"
-              }`}
-            >
-              <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Mode two</p>
-              <p className="mt-2 text-xl font-semibold text-white">Behavioral</p>
-              <p className="mt-2 text-sm text-slate-400">
-                {behavIndex}/{behavioralQs.length} completed
-              </p>
-            </button>
+            {[
+              { key: "technical", label: "Technical", count: `${techIndex}/${technicalQs.length}` },
+              { key: "behavioral", label: "Behavioral", count: `${behavIndex}/${behavioralQs.length}` },
+            ].map((item) => {
+              const active = mode === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => !active && switchMode(item.key as Mode)}
+                  className={`rounded-[28px] border p-5 text-left transition ${
+                    active ? "app-chip" : "app-panel"
+                  }`}
+                >
+                  <p className="text-sm uppercase tracking-[0.18em] app-text-muted">Mode</p>
+                  <p className="mt-2 text-xl font-semibold app-text-primary">{item.label}</p>
+                  <p className="mt-2 text-sm app-text-muted">{item.count} completed</p>
+                </button>
+              );
+            })}
           </div>
 
-          {isDone && (
-            <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+          {isDone ? (
+            <Card className="app-panel rounded-[32px]">
               <CardContent className="space-y-4 py-12 text-center">
-                <p className="text-2xl font-semibold text-white">
+                <p className="text-2xl font-semibold app-text-primary">
                   {mode === "technical" ? "Technical" : "Behavioral"} questions complete
-                </p>
-                <p className="text-slate-400">
-                  Switch modes to continue the session or head back to the dashboard.
                 </p>
                 <div className="flex flex-col justify-center gap-3 md:flex-row">
                   <Button
-                    className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                    className="app-primary-button h-12 rounded-2xl px-6 text-base font-semibold"
                     onClick={() =>
                       switchMode(mode === "technical" ? "behavioral" : "technical")
                     }
                   >
-                    Switch to {mode === "technical" ? "Behavioral" : "Technical"}
+                    Switch Mode
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-12 rounded-2xl border-white/10 bg-transparent px-6 text-slate-100 hover:bg-white/5"
+                    className="app-secondary-button h-12 rounded-2xl px-6"
                     onClick={() => router.push("/dashboard")}
                   >
                     Return to Dashboard
@@ -407,65 +393,55 @@ export default function InterviewPage() {
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {!isDone && (
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          ) : (
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
               <div className="space-y-6">
-                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                <Card className="app-panel rounded-[32px]">
                   <CardHeader className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                          Question progress
+                        <p className="text-xs uppercase tracking-[0.18em] app-text-muted">
+                          Progress
                         </p>
-                        <p className="mt-2 text-sm text-slate-300">
+                        <p className="mt-2 text-sm app-text-secondary">
                           Question {index + 1} of {questions.length}
                           {inFollowup ? " - Follow-up" : ""}
                         </p>
                       </div>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          mode === "technical"
-                            ? "bg-emerald-300/12 text-emerald-100"
-                            : "bg-cyan-300/12 text-cyan-100"
-                        }`}
-                      >
+                      <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
                         {mode === "technical" ? "Technical" : "Behavioral"}
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-white/[0.06]">
+                    <div className="app-panel-soft h-2 rounded-full">
                       <div
-                        className="h-2 rounded-full bg-emerald-300 transition-all"
+                        className="h-2 rounded-full bg-[color:var(--button-bg)] transition-all"
                         style={{ width: `${((index + 1) / Math.max(questions.length, 1)) * 100}%` }}
                       />
                     </div>
                   </CardHeader>
                 </Card>
 
-                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                <Card className="app-panel rounded-[32px]">
                   <CardHeader className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <CardTitle className="flex-1 text-2xl leading-tight text-white">
+                      <CardTitle className="flex-1 text-2xl leading-tight app-text-primary">
                         {inFollowup ? followup : currentQuestion}
                       </CardTitle>
                       {language !== "asl" && currentQuestion && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-11 w-11 rounded-2xl text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                          className="h-11 w-11 rounded-2xl app-text-secondary hover:opacity-80"
                           disabled={isSpeaking}
                           onClick={() => speak(inFollowup && followup ? followup : currentQuestion)}
                           title="Replay question"
                         >
-                          <Volume2
-                            className={`h-5 w-5 ${isSpeaking ? "animate-pulse text-emerald-200" : ""}`}
-                          />
+                          <Volume2 className="h-5 w-5" />
                         </Button>
                       )}
                     </div>
                     {inFollowup && (
-                      <CardDescription className="text-base text-slate-400">
+                      <CardDescription className="text-base app-text-muted">
                         Follow-up based on your previous answer.
                       </CardDescription>
                     )}
@@ -473,7 +449,7 @@ export default function InterviewPage() {
 
                   <CardContent className="space-y-4">
                     <textarea
-                      className="min-h-[180px] w-full resize-none rounded-[24px] border border-white/10 bg-[#081017] px-4 py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      className="app-input min-h-[180px] w-full resize-none rounded-[24px] px-4 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       placeholder={isRecording ? "Listening..." : "Type or record your answer..."}
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
@@ -487,7 +463,7 @@ export default function InterviewPage() {
                         <Button
                           variant={isRecording ? "destructive" : "outline"}
                           onClick={isRecording ? stopRecording : startRecording}
-                          className="h-11 rounded-2xl border-white/10 bg-transparent px-4 text-slate-100 hover:bg-white/5"
+                          className="app-secondary-button h-11 rounded-2xl px-4"
                         >
                           {isRecording ? (
                             <>
@@ -506,7 +482,7 @@ export default function InterviewPage() {
                       <Button
                         variant="ghost"
                         onClick={advance}
-                        className="h-11 rounded-2xl px-4 text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                        className="h-11 rounded-2xl px-4 app-text-muted hover:opacity-80"
                       >
                         Skip
                       </Button>
@@ -514,42 +490,36 @@ export default function InterviewPage() {
                       <Button
                         onClick={handleSubmit}
                         disabled={!answer.trim() || isSubmitting}
-                        className="ml-auto h-11 rounded-2xl bg-emerald-400 px-5 font-semibold text-[#092014] hover:bg-emerald-300"
+                        className="app-primary-button ml-auto h-11 rounded-2xl px-5 font-semibold"
                       >
                         <Send className="mr-2 h-4 w-4" />
                         {isSubmitting ? "Processing..." : inFollowup ? "Next Question" : "Submit"}
                       </Button>
                     </div>
-
-                    {isRecording && (
-                      <p className="text-sm text-emerald-200">
-                        Recording is active. Speak naturally and we&apos;ll fill the answer box.
-                      </p>
-                    )}
                   </CardContent>
                 </Card>
               </div>
 
               <div className="space-y-6">
                 {language === "asl" && (
-                  <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                  <Card className="app-panel rounded-[32px]">
                     <CardHeader>
-                      <CardTitle className="text-white">ASL camera panel</CardTitle>
-                      <CardDescription className="leading-7 text-slate-400">
+                      <CardTitle className="app-text-primary">ASL camera panel</CardTitle>
+                      <CardDescription className="leading-7 app-text-muted">
                         Enable camera access to practice in ASL mode.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {!camGranted ? (
                         <Button
-                          className="h-12 w-full rounded-2xl bg-emerald-400 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                          className="app-primary-button h-12 w-full rounded-2xl text-base font-semibold"
                           onClick={startCamera}
                         >
                           <Video className="mr-2 h-5 w-5" />
                           Grant Camera Access
                         </Button>
                       ) : (
-                        <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black">
+                        <div className="relative overflow-hidden rounded-[24px] border border-[color:var(--panel-border)] bg-black">
                           <video
                             ref={videoRef}
                             autoPlay
@@ -557,7 +527,7 @@ export default function InterviewPage() {
                             muted
                             className="aspect-video w-full object-cover"
                           />
-                          <span className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-emerald-400/90 px-3 py-1 text-xs font-medium text-[#092014]">
+                          <span className="app-chip absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium">
                             <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
                             Live camera
                           </span>
@@ -567,14 +537,14 @@ export default function InterviewPage() {
                   </Card>
                 )}
 
-                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                <Card className="app-panel rounded-[32px]">
                   <CardHeader>
-                    <CardTitle className="text-white">Session guide</CardTitle>
+                    <CardTitle className="app-text-primary">Session guide</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm leading-7 text-slate-400">
+                  <CardContent className="space-y-4 text-sm leading-7 app-text-muted">
                     <p>Technical questions are grounded in your uploaded resume content.</p>
-                    <p>Behavioral questions test clarity, decision-making, and communication.</p>
-                    <p>Use `Ctrl+Enter` or `Cmd+Enter` to submit quickly from the answer box.</p>
+                    <p>Behavioral questions focus on communication and decision-making.</p>
+                    <p>Use Ctrl+Enter or Cmd+Enter to submit from the answer box.</p>
                   </CardContent>
                 </Card>
               </div>

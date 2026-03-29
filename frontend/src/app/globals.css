@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  [data-theme="dark"] {
     --background: 212 34% 8%;
     --foreground: 210 40% 98%;
     --card: 214 28% 10%;
@@ -24,42 +25,68 @@
     --input: 215 27% 18%;
     --ring: 146 72% 61%;
     --radius: 1rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+
+    --app-bg-start: #0c1218;
+    --app-bg-end: #091017;
+    --app-spot-a: rgba(87, 225, 164, 0.14);
+    --app-spot-b: rgba(56, 189, 248, 0.1);
+    --panel: rgba(13, 20, 27, 0.92);
+    --panel-soft: rgba(255, 255, 255, 0.04);
+    --panel-border: rgba(255, 255, 255, 0.1);
+    --text-primary: #f8fafc;
+    --text-secondary: #dbe4ee;
+    --text-muted: #8a98ab;
+    --chip-bg: rgba(74, 222, 128, 0.12);
+    --chip-border: rgba(74, 222, 128, 0.24);
+    --chip-text: #d1fae5;
+    --button-bg: #63e6a6;
+    --button-text: #0b1e14;
+    --button-secondary-bg: rgba(255, 255, 255, 0.05);
+    --button-secondary-text: #f8fafc;
+    --selection-bg: rgba(110, 231, 183, 0.28);
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
-}
+  [data-theme="light"] {
+    --background: 0 0% 100%;
+    --foreground: 258 31% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 258 31% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 258 31% 16%;
+    --primary: 268 73% 57%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 33% 96%;
+    --secondary-foreground: 258 31% 16%;
+    --muted: 270 33% 96%;
+    --muted-foreground: 258 14% 44%;
+    --accent: 270 33% 96%;
+    --accent-foreground: 258 31% 16%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 24% 88%;
+    --input: 270 24% 88%;
+    --ring: 268 73% 57%;
 
-@layer base {
+    --app-bg-start: #ffffff;
+    --app-bg-end: #f6f0ff;
+    --app-spot-a: rgba(168, 85, 247, 0.12);
+    --app-spot-b: rgba(124, 58, 237, 0.08);
+    --panel: rgba(255, 255, 255, 0.92);
+    --panel-soft: rgba(124, 58, 237, 0.06);
+    --panel-border: rgba(124, 58, 237, 0.12);
+    --text-primary: #261f35;
+    --text-secondary: #433457;
+    --text-muted: #7b6d90;
+    --chip-bg: rgba(139, 92, 246, 0.1);
+    --chip-border: rgba(139, 92, 246, 0.16);
+    --chip-text: #6d28d9;
+    --button-bg: #8b5cf6;
+    --button-text: #ffffff;
+    --button-secondary-bg: rgba(124, 58, 237, 0.06);
+    --button-secondary-text: #4c1d95;
+    --selection-bg: rgba(196, 181, 253, 0.45);
+  }
+
   * {
     @apply border-border;
   }
@@ -68,17 +95,106 @@
     color-scheme: dark;
   }
 
+  [data-theme="light"] {
+    color-scheme: light;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     background-image:
-      radial-gradient(circle at top left, rgba(87, 225, 164, 0.12), transparent 25%),
-      radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.1), transparent 20%),
-      linear-gradient(180deg, #0c1218 0%, #091017 100%);
+      radial-gradient(circle at top left, var(--app-spot-a), transparent 25%),
+      radial-gradient(circle at 80% 20%, var(--app-spot-b), transparent 20%),
+      linear-gradient(180deg, var(--app-bg-start) 0%, var(--app-bg-end) 100%);
     background-attachment: fixed;
   }
 
   ::selection {
-    background: rgba(110, 231, 183, 0.28);
-    color: white;
+    background: var(--selection-bg);
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  .app-shell {
+    @apply relative min-h-screen overflow-hidden;
+  }
+
+  .app-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top left, var(--app-spot-a), transparent 28%),
+      radial-gradient(circle at 80% 20%, var(--app-spot-b), transparent 20%);
+    pointer-events: none;
+  }
+
+  .app-container {
+    @apply relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10;
+  }
+
+  .app-header {
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .app-panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text-primary);
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(16px);
+  }
+
+  .app-panel-soft {
+    background: var(--panel-soft);
+    border: 1px solid var(--panel-border);
+    color: var(--text-primary);
+  }
+
+  .app-chip {
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    color: var(--chip-text);
+  }
+
+  .app-text-primary {
+    color: var(--text-primary);
+  }
+
+  .app-text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .app-text-muted {
+    color: var(--text-muted);
+  }
+
+  .app-input {
+    background: color-mix(in srgb, var(--panel) 85%, transparent);
+    border: 1px solid var(--panel-border);
+    color: var(--text-primary);
+  }
+
+  .app-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .app-primary-button {
+    background: var(--button-bg);
+    color: var(--button-text);
+  }
+
+  .app-primary-button:hover {
+    filter: brightness(0.96);
+  }
+
+  .app-secondary-button {
+    background: var(--button-secondary-bg);
+    border: 1px solid var(--panel-border);
+    color: var(--button-secondary-text);
+  }
+
+  .app-secondary-button:hover {
+    filter: brightness(0.98);
   }
 }

@@ -1,13 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export const dynamic = "force-dynamic";
-
-const highlights = [
-  "Resume-based technical and behavioral prompts",
-  "Voice coaching with multilingual support",
-  "ASL-friendly practice flows for accessibility",
-];
 
 export default function AuthLayout({
   children,
@@ -15,60 +10,34 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(87,225,164,0.14),_transparent_28%),radial-gradient(circle_at_80%_20%,_rgba(56,189,248,0.10),_transparent_20%)]" />
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
-        <header className="flex items-center justify-between border-b border-white/8 pb-6">
+    <div className="app-shell">
+      <div className="app-container">
+        <header className="app-header flex items-center justify-between pb-6">
           <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
-              <Sparkles className="h-5 w-5 text-emerald-300" />
+            <div className="app-panel-soft flex h-11 w-11 items-center justify-center rounded-2xl">
+              <Sparkles className="h-5 w-5 app-text-primary" />
             </div>
             <div>
-              <p className="text-lg font-semibold tracking-tight text-white">
+              <p className="text-lg font-semibold tracking-tight app-text-primary">
                 smart interview
               </p>
-              <p className="text-sm text-slate-400">AI prep that feels like the real thing.</p>
+              <p className="text-sm app-text-muted">Sign in to continue practicing.</p>
             </div>
           </Link>
 
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-slate-300 transition hover:text-white"
-          >
-            Back to home <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-sm transition app-text-secondary hover:opacity-80"
+            >
+              Back to home <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </header>
 
-        <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-16">
-          <section className="max-w-2xl space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-200">
-              <ShieldCheck className="h-4 w-4 text-emerald-300" />
-              Secure sign in for your private practice history
-            </div>
-
-            <div className="space-y-4">
-              <h1 className="max-w-xl text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
-                Step into the same interface you’ll use to train, screen, and rehearse.
-              </h1>
-              <p className="max-w-xl text-lg leading-8 text-slate-400">
-                Every flow in Smart Interview now shares the same dark, focused studio
-                feel so the product stays calm and consistent from sign in to mock session.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {highlights.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-slate-300"
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section>{children}</section>
+        <div className="flex flex-1 items-center justify-center py-10">
+          <section className="w-full max-w-md">{children}</section>
         </div>
       </div>
     </div>
