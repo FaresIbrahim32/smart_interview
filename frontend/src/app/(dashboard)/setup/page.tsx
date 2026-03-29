@@ -86,14 +86,12 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <Card className="rounded-[32px] border-white/10 bg-[#0d141b] shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <Card className="panel-surface rounded-[32px]">
         <CardHeader className="space-y-4">
-          <div className="inline-flex w-fit rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-emerald-100">
-            Setup
-          </div>
-          <CardTitle className="text-3xl text-white">Upload the resume that will drive your session</CardTitle>
-          <CardDescription className="max-w-2xl text-base leading-7 text-slate-400">
+          <div className="section-label">Setup</div>
+          <CardTitle className="text-3xl text-foreground">Upload the resume that will drive your session</CardTitle>
+          <CardDescription className="max-w-2xl text-base leading-7 text-muted-foreground">
             We parse the PDF, save the chunks locally for your practice flow, and store
             your language preference so screening and interviews stay aligned.
           </CardDescription>
@@ -101,8 +99,8 @@ export default function SetupPage() {
 
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
-            <div className="rounded-[28px] border border-white/8 bg-[#0b1117] p-5">
-              <Label htmlFor="resume" className="text-slate-200">
+            <div className="rounded-[28px] border border-border/60 bg-secondary/60 p-5">
+              <Label htmlFor="resume" className="text-foreground">
                 Resume PDF
               </Label>
               <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
@@ -111,19 +109,19 @@ export default function SetupPage() {
                   type="file"
                   accept=".pdf"
                   onChange={handleFileChange}
-                  className="h-12 cursor-pointer rounded-2xl border-white/10 bg-[#081017] text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-emerald-300/15 file:px-3 file:py-2 file:text-emerald-100 placeholder:text-slate-500 focus-visible:ring-emerald-300"
+                  className="h-12 cursor-pointer rounded-2xl border-border/70 bg-background/70 text-foreground file:mr-4 file:rounded-xl file:border-0 file:bg-primary/12 file:px-3 file:py-2 file:text-primary placeholder:text-muted-foreground focus-visible:ring-primary"
                 />
                 {file && (
-                  <div className="inline-flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
-                    <Upload className="h-4 w-4 text-emerald-300" />
+                  <div className="inline-flex items-center gap-2 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-foreground">
+                    <Upload className="h-4 w-4 text-primary" />
                     {file.name}
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/8 bg-[#0b1117] p-5">
-              <Label htmlFor="language" className="text-slate-200">
+            <div className="rounded-[28px] border border-border/60 bg-secondary/60 p-5">
+              <Label htmlFor="language" className="text-foreground">
                 Interview language
               </Label>
               <Select
@@ -132,7 +130,7 @@ export default function SetupPage() {
                 onChange={(e) =>
                   setLanguage(e.target.value as "english" | "spanish" | "asl")
                 }
-                className="mt-3 h-12 rounded-2xl border-white/10 bg-[#081017] text-white focus-visible:ring-emerald-300"
+                className="mt-3 h-12 rounded-2xl border-border/70 bg-background/70 text-foreground focus-visible:ring-primary"
               >
                 <option value="english">English (Voice)</option>
                 <option value="spanish">Spanish (Voice)</option>
@@ -149,7 +147,7 @@ export default function SetupPage() {
             <div className="flex flex-col gap-3 md:flex-row">
               <Button
                 type="submit"
-                className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                className="h-12 rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90"
                 disabled={!file || loading}
               >
                 {loading ? "Parsing resume..." : "Continue to Dashboard"}
@@ -157,7 +155,7 @@ export default function SetupPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 rounded-2xl border-white/10 bg-transparent px-6 text-slate-100 hover:bg-white/5"
+                className="h-12 rounded-2xl border-border/70 bg-transparent px-6 text-foreground hover:bg-accent"
                 onClick={() => router.push("/dashboard")}
               >
                 Cancel
@@ -165,7 +163,7 @@ export default function SetupPage() {
             </div>
 
             {loading && (
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-muted-foreground">
                 Sending your resume through the parsing pipeline. This usually takes a
                 few seconds.
               </p>
@@ -174,42 +172,36 @@ export default function SetupPage() {
         </form>
       </Card>
 
-      <div className="space-y-4">
-        {[
-          {
-            icon: FileText,
-            title: "Resume parsing",
-            copy: "We extract content from your PDF and save the resulting chunks for your practice session.",
-          },
-          {
-            icon: Languages,
-            title: "Language profile",
-            copy: "The mode you choose here is reused by the interview flow and stored as your preference.",
-          },
-          {
-            icon: Upload,
-            title: "Re-upload anytime",
-            copy: "You can replace the resume later if you tailor it for a different role.",
-          },
-        ].map((item) => (
-          <Card
-            key={item.title}
-            className="rounded-[28px] border-white/10 bg-white/[0.03]"
-          >
-            <CardHeader className="space-y-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-300/12 text-emerald-200">
-                <item.icon className="h-5 w-5" />
+      <Card className="panel-soft rounded-[32px]">
+        <CardHeader className="space-y-5">
+          <CardTitle className="text-xl text-foreground">What happens next</CardTitle>
+          <div className="space-y-4">
+            {[
+              {
+                icon: FileText,
+                title: "Resume parsing",
+                copy: "We extract content from your PDF and save the resulting chunks for your practice session.",
+              },
+              {
+                icon: Languages,
+                title: "Language profile",
+                copy: "The mode you choose here is reused by the interview flow and stored as your preference.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-[24px] border border-border/60 bg-background/55 p-4"
+              >
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                  <item.icon className="h-5 w-5" />
+                </div>
+                <p className="text-lg font-medium text-foreground">{item.title}</p>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">{item.copy}</p>
               </div>
-              <div>
-                <CardTitle className="text-lg text-white">{item.title}</CardTitle>
-                <CardDescription className="mt-2 leading-7 text-slate-400">
-                  {item.copy}
-                </CardDescription>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
+            ))}
+          </div>
+        </CardHeader>
+      </Card>
     </div>
   );
 }

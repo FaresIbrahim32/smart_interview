@@ -41,6 +41,8 @@ export default function InterviewPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const sessionId = useRef<string>("");
+  const aslSessionId = useRef<string>("");
+  const aslIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [language, setLanguage] = useState<Language>("english");
   const languageRef = useRef<Language>("english");
@@ -64,13 +66,10 @@ export default function InterviewPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // ASL state
   const [aslText, setAslText] = useState("");
   const [aslConfidence, setAslConfidence] = useState(0);
   const [aslLastSign, setAslLastSign] = useState("");
   const [isAslProcessing, setIsAslProcessing] = useState(false);
-  const aslSessionId = useRef<string>("");
-  const aslIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const playAudio = useCallback((b64: string) => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -140,76 +139,59 @@ export default function InterviewPage() {
     setIsRecording(false);
   }, []);
 
-  // ASL processing functions
   const startAslProcessing = useCallback(async () => {
     if (!videoRef.current || !camGranted) {
-      console.log('ASL processing not started: video ref or camera not ready', {videoRef: !!videoRef.current, camGranted});
       return;
     }
 
-    console.log('Starting ASL processing...');
-
-    // Test backend connection first (but don't fail if it's not available)
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const testRes = await fetch(`${apiUrl}/asl/reset?session_id=${aslSessionId.current}`, {
-        method: 'POST'
+      await fetch(`${apiUrl}/asl/reset?session_id=${aslSessionId.current}`, {
+        method: "POST",
       });
-      if (!testRes.ok) {
-        console.warn('Backend ASL endpoint not available, but continuing anyway');
-      } else {
-        console.log('Backend connection test passed');
-      }
-    } catch (error) {
-      console.warn('Backend connection test failed, but continuing anyway:', error);
+    } catch {
+      // Non-blocking.
     }
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      console.error('Could not get canvas context');
-      return;
-    }
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     canvas.width = 320;
     canvas.height = 240;
 
     const processFrame = async () => {
-      if (!videoRef.current || !ctx) return;
+      if (!videoRef.current) return;
 
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const frameData = canvas.toDataURL('image/jpeg', 0.8);
+      const frameData = canvas.toDataURL("image/jpeg", 0.8);
 
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const res = await fetch(`${apiUrl}/asl/process-frame`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             session_id: aslSessionId.current,
             frame: frameData,
             width: canvas.width,
-            height: canvas.height
-          })
+            height: canvas.height,
+          }),
         });
 
         if (res.ok) {
           const data = await res.json();
-          setAslText(data.buffer || '');
+          setAslText(data.buffer || "");
           setAslConfidence(data.confidence || 0);
-          setAslLastSign(data.last_sign || '');
-        } else {
-          console.error('ASL processing failed:', res.status, res.statusText);
+          setAslLastSign(data.last_sign || "");
         }
-      } catch (error) {
-        console.error('ASL processing error:', error);
+      } catch {
+        // Non-blocking.
       }
     };
 
-    // Process frames at ~10 FPS
     aslIntervalRef.current = setInterval(processFrame, 100);
     setIsAslProcessing(true);
-    console.log('ASL processing started');
   }, [camGranted]);
 
   const stopAslProcessing = useCallback(() => {
@@ -224,13 +206,13 @@ export default function InterviewPage() {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       await fetch(`${apiUrl}/asl/reset?session_id=${aslSessionId.current}`, {
-        method: 'POST'
+        method: "POST",
       });
-      setAslText('');
-      setAslLastSign('');
+      setAslText("");
+      setAslLastSign("");
       setAslConfidence(0);
-    } catch (error) {
-      console.error('ASL reset error:', error);
+    } catch {
+      // Non-blocking.
     }
   }, []);
 
@@ -238,7 +220,6 @@ export default function InterviewPage() {
     languageRef.current = language;
   }, [language]);
 
-  // Initialize session IDs (must be after hydration to avoid mismatch)
   useEffect(() => {
     if (!sessionId.current) {
       sessionId.current = `session_${Date.now()}`;
@@ -303,16 +284,22 @@ export default function InterviewPage() {
     init();
   }, [router, speak]);
 
+  const questions = mode === "technical" ? technicalQs : behavioralQs;
+  const index = mode === "technical" ? techIndex : behavIndex;
+  const setIndex = mode === "technical" ? setTechIndex : setBehavIndex;
+  const currentQuestion = questions[index] ?? null;
+  const isDone = phase === "interviewing" && index >= questions.length && !inFollowup;
+
   useEffect(() => {
     if (phase !== "interviewing") return;
     const question = inFollowup ? followup : currentQuestion;
     if (question) speak(question);
-  }, [techIndex, behavIndex, mode, inFollowup, followup, phase, speak]);
+  }, [techIndex, behavIndex, mode, inFollowup, followup, phase, currentQuestion, speak]);
 
   const startCamera = async () => {
     try {
       const media = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 }
+        video: { width: 640, height: 480 },
       });
       setStream(media);
       setCamGranted(true);
@@ -320,7 +307,7 @@ export default function InterviewPage() {
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = media;
-          videoRef.current.play().catch(console.error);
+          videoRef.current.play().catch(() => null);
         }
       }, 100);
     } catch (error) {
@@ -337,29 +324,19 @@ export default function InterviewPage() {
     stopAslProcessing();
   }, [stream, stopAslProcessing]);
 
-  // Only stop media when leaving the page or switching languages
   useEffect(() => {
     return () => {
       stream?.getTracks().forEach((track) => track.stop());
     };
   }, [stream]);
 
-  // ASL processing effect - controlled by language and camera granted state
   useEffect(() => {
-    if (language === 'asl' && camGranted && !isAslProcessing) {
-      console.log('Starting ASL processing via effect...');
+    if (language === "asl" && camGranted && !isAslProcessing) {
       startAslProcessing();
-    } else if ((language !== 'asl' || !camGranted) && isAslProcessing) {
-      console.log('Stopping ASL processing via effect...');
+    } else if ((language !== "asl" || !camGranted) && isAslProcessing) {
       stopAslProcessing();
     }
-  }, [language, camGranted]);
-
-  const questions = mode === "technical" ? technicalQs : behavioralQs;
-  const index = mode === "technical" ? techIndex : behavIndex;
-  const setIndex = mode === "technical" ? setTechIndex : setBehavIndex;
-  const isDone = phase === "interviewing" && index >= questions.length && !inFollowup;
-  const currentQuestion = questions[index] ?? null;
+  }, [language, camGranted, isAslProcessing, startAslProcessing, stopAslProcessing]);
 
   const advance = useCallback(() => {
     setFollowup(null);
@@ -421,16 +398,14 @@ export default function InterviewPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] border border-white/10 bg-[#0d141b] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.32)]">
+      <section className="panel-surface rounded-[32px] p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <div className="inline-flex rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-emerald-100">
-              Interview session
-            </div>
-            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
+            <div className="section-label">Interview session</div>
+            <h1 className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-foreground sm:text-5xl">
               Practice in a focused, live-session workspace.
             </h1>
-            <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-400">
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">
               Move through technical and behavioral questions with voice playback,
               optional speech-to-text, and ASL camera support when needed.
             </p>
@@ -442,7 +417,7 @@ export default function InterviewPage() {
               stopMedia();
               router.push("/dashboard");
             }}
-            className="h-12 rounded-2xl border-white/10 bg-transparent px-5 text-slate-100 hover:bg-white/5"
+            className="h-12 rounded-2xl border-border/70 bg-transparent px-5 text-foreground hover:bg-accent"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -451,13 +426,13 @@ export default function InterviewPage() {
       </section>
 
       {(phase === "loading" || phase === "generating") && (
-        <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+        <Card className="panel-surface rounded-[32px]">
           <CardContent className="space-y-5 py-16 text-center">
             {error ? (
               <>
                 <p className="text-lg font-medium text-red-200">{error}</p>
                 <Button
-                  className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                  className="h-12 rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90"
                   onClick={() => router.push("/setup")}
                 >
                   Upload Resume
@@ -465,12 +440,12 @@ export default function InterviewPage() {
               </>
             ) : (
               <>
-                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-emerald-300 border-t-transparent" />
+                <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary/35 border-t-primary" />
                 <div>
-                  <p className="text-lg font-medium text-white">
+                  <p className="text-lg font-medium text-foreground">
                     {phase === "generating" ? "Generating your question set" : "Loading session"}
                   </p>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     {phase === "generating"
                       ? "Analyzing your resume content to create technical and behavioral prompts."
                       : "Preparing your interview environment."}
@@ -490,13 +465,13 @@ export default function InterviewPage() {
               onClick={() => mode !== "technical" && switchMode("technical")}
               className={`rounded-[28px] border p-5 text-left transition ${
                 mode === "technical"
-                  ? "border-emerald-300/30 bg-emerald-300/10"
-                  : "border-white/10 bg-[#0d141b] hover:bg-white/[0.04]"
+                  ? "border-primary/30 bg-primary/10"
+                  : "border-border/70 bg-card/70 hover:bg-accent"
               }`}
             >
-              <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Mode one</p>
-              <p className="mt-2 text-xl font-semibold text-white">Technical</p>
-              <p className="mt-2 text-sm text-slate-400">
+              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Question track</p>
+              <p className="mt-2 text-xl font-semibold text-foreground">Technical</p>
+              <p className="mt-2 text-sm text-muted-foreground">
                 {techIndex}/{technicalQs.length} completed
               </p>
             </button>
@@ -506,30 +481,30 @@ export default function InterviewPage() {
               onClick={() => mode !== "behavioral" && switchMode("behavioral")}
               className={`rounded-[28px] border p-5 text-left transition ${
                 mode === "behavioral"
-                  ? "border-cyan-300/30 bg-cyan-300/10"
-                  : "border-white/10 bg-[#0d141b] hover:bg-white/[0.04]"
+                  ? "border-primary/30 bg-primary/10"
+                  : "border-border/70 bg-card/70 hover:bg-accent"
               }`}
             >
-              <p className="text-sm uppercase tracking-[0.18em] text-slate-500">Mode two</p>
-              <p className="mt-2 text-xl font-semibold text-white">Behavioral</p>
-              <p className="mt-2 text-sm text-slate-400">
+              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Question track</p>
+              <p className="mt-2 text-xl font-semibold text-foreground">Behavioral</p>
+              <p className="mt-2 text-sm text-muted-foreground">
                 {behavIndex}/{behavioralQs.length} completed
               </p>
             </button>
           </div>
 
           {isDone && (
-            <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+            <Card className="panel-surface rounded-[32px]">
               <CardContent className="space-y-4 py-12 text-center">
-                <p className="text-2xl font-semibold text-white">
+                <p className="text-2xl font-semibold text-foreground">
                   {mode === "technical" ? "Technical" : "Behavioral"} questions complete
                 </p>
-                <p className="text-slate-400">
+                <p className="text-muted-foreground">
                   Switch modes to continue the session or head back to the dashboard.
                 </p>
                 <div className="flex flex-col justify-center gap-3 md:flex-row">
                   <Button
-                    className="h-12 rounded-2xl bg-emerald-400 px-6 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                    className="h-12 rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90"
                     onClick={() =>
                       switchMode(mode === "technical" ? "behavioral" : "technical")
                     }
@@ -538,7 +513,7 @@ export default function InterviewPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-12 rounded-2xl border-white/10 bg-transparent px-6 text-slate-100 hover:bg-white/5"
+                    className="h-12 rounded-2xl border-border/70 bg-transparent px-6 text-foreground hover:bg-accent"
                     onClick={() => router.push("/dashboard")}
                   >
                     Return to Dashboard
@@ -551,60 +526,54 @@ export default function InterviewPage() {
           {!isDone && (
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
               <div className="space-y-6">
-                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                <Card className="panel-surface rounded-[32px]">
                   <CardHeader className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                           Question progress
                         </p>
-                        <p className="mt-2 text-sm text-slate-300">
+                        <p className="mt-2 text-sm text-foreground/80">
                           Question {index + 1} of {questions.length}
                           {inFollowup ? " - Follow-up" : ""}
                         </p>
                       </div>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          mode === "technical"
-                            ? "bg-emerald-300/12 text-emerald-100"
-                            : "bg-cyan-300/12 text-cyan-100"
-                        }`}
-                      >
+                      <span className="rounded-full bg-primary/12 px-3 py-1 text-xs font-medium text-primary">
                         {mode === "technical" ? "Technical" : "Behavioral"}
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-white/[0.06]">
+                    <div className="h-2 rounded-full bg-secondary">
                       <div
-                        className="h-2 rounded-full bg-emerald-300 transition-all"
+                        className="h-2 rounded-full bg-primary transition-all"
                         style={{ width: `${((index + 1) / Math.max(questions.length, 1)) * 100}%` }}
                       />
                     </div>
                   </CardHeader>
                 </Card>
 
-                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                <Card className="panel-surface rounded-[32px]">
                   <CardHeader className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <CardTitle className="flex-1 text-2xl leading-tight text-white">
+                      <CardTitle className="flex-1 text-2xl leading-tight text-foreground">
                         {inFollowup ? followup : currentQuestion}
                       </CardTitle>
                       {language !== "asl" && currentQuestion && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-11 w-11 rounded-2xl text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                          className="h-11 w-11 rounded-2xl text-muted-foreground hover:bg-accent hover:text-foreground"
                           disabled={isSpeaking}
                           onClick={() => speak(inFollowup && followup ? followup : currentQuestion)}
                           title="Replay question"
                         >
                           <Volume2
-                            className={`h-5 w-5 ${isSpeaking ? "animate-pulse text-emerald-200" : ""}`}
+                            className={`h-5 w-5 ${isSpeaking ? "animate-pulse text-primary" : ""}`}
                           />
                         </Button>
                       )}
                     </div>
                     {inFollowup && (
-                      <CardDescription className="text-base text-slate-400">
+                      <CardDescription className="text-base text-muted-foreground">
                         Follow-up based on your previous answer.
                       </CardDescription>
                     )}
@@ -612,7 +581,7 @@ export default function InterviewPage() {
 
                   <CardContent className="space-y-4">
                     <textarea
-                      className="min-h-[180px] w-full resize-none rounded-[24px] border border-white/10 bg-[#081017] px-4 py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      className="min-h-[180px] w-full resize-none rounded-[24px] border border-border/70 bg-background/75 px-4 py-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder={isRecording ? "Listening..." : "Type or record your answer..."}
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
@@ -626,7 +595,7 @@ export default function InterviewPage() {
                         <Button
                           variant={isRecording ? "destructive" : "outline"}
                           onClick={isRecording ? stopRecording : startRecording}
-                          className="h-11 rounded-2xl border-white/10 bg-transparent px-4 text-slate-100 hover:bg-white/5"
+                          className="h-11 rounded-2xl border-border/70 bg-transparent px-4 text-foreground hover:bg-accent"
                         >
                           {isRecording ? (
                             <>
@@ -645,7 +614,7 @@ export default function InterviewPage() {
                       <Button
                         variant="ghost"
                         onClick={advance}
-                        className="h-11 rounded-2xl px-4 text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                        className="h-11 rounded-2xl px-4 text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
                         Skip
                       </Button>
@@ -653,7 +622,7 @@ export default function InterviewPage() {
                       <Button
                         onClick={handleSubmit}
                         disabled={!answer.trim() || isSubmitting}
-                        className="ml-auto h-11 rounded-2xl bg-emerald-400 px-5 font-semibold text-[#092014] hover:bg-emerald-300"
+                        className="ml-auto h-11 rounded-2xl bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90"
                       >
                         <Send className="mr-2 h-4 w-4" />
                         {isSubmitting ? "Processing..." : inFollowup ? "Next Question" : "Submit"}
@@ -661,7 +630,7 @@ export default function InterviewPage() {
                     </div>
 
                     {isRecording && (
-                      <p className="text-sm text-emerald-200">
+                      <p className="text-sm text-primary">
                         Recording is active. Speak naturally and we&apos;ll fill the answer box.
                       </p>
                     )}
@@ -671,47 +640,25 @@ export default function InterviewPage() {
 
               <div className="space-y-6">
                 {(language === "asl" || camGranted) && (
-                  <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                  <Card className="panel-surface rounded-[32px]">
                     <CardHeader>
-                      <CardTitle className="text-white">ASL Recognition</CardTitle>
-                      <CardDescription className="leading-7 text-slate-400">
-                        Sign into the camera. Use the controls below to manage your signing session.
+                      <CardTitle className="text-foreground">ASL Recognition</CardTitle>
+                      <CardDescription className="leading-7 text-muted-foreground">
+                        Sign into the camera and add recognized text into your answer when it looks right.
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {!camGranted ? (
-                        <div className="space-y-3">
-                          <Button
-                            className="h-12 w-full rounded-2xl bg-emerald-400 text-base font-semibold text-[#092014] hover:bg-emerald-300"
-                            onClick={startCamera}
-                          >
-                            <Video className="mr-2 h-5 w-5" />
-                            Enable Camera for ASL
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="h-10 w-full rounded-xl border-white/10 bg-transparent text-slate-300 hover:bg-white/5"
-                            onClick={async () => {
-                              try {
-                                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-                                const res = await fetch(`${apiUrl}/asl/reset?session_id=test`, { method: 'POST' });
-                                if (res.ok) {
-                                  alert('✅ Backend ASL endpoint is working!');
-                                } else {
-                                  alert(`❌ Backend error: ${res.status}`);
-                                }
-                              } catch (error) {
-                                const message = error instanceof Error ? error.message : String(error);
-                                alert(`❌ Cannot connect to backend: ${message}`);
-                              }
-                            }}
-                          >
-                            Test Backend Connection
-                          </Button>
-                        </div>
+                        <Button
+                          className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"
+                          onClick={startCamera}
+                        >
+                          <Video className="mr-2 h-5 w-5" />
+                          Enable Camera for ASL
+                        </Button>
                       ) : (
                         <div className="space-y-4">
-                          <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black">
+                          <div className="relative overflow-hidden rounded-[24px] border border-border/70 bg-black">
                             <video
                               ref={videoRef}
                               autoPlay
@@ -719,44 +666,50 @@ export default function InterviewPage() {
                               muted
                               width={640}
                               height={480}
-                              className="w-full h-auto aspect-video object-cover"
-                              style={{ display: 'block', backgroundColor: '#000' }}
+                              className="aspect-video h-auto w-full object-cover"
+                              style={{ display: "block", backgroundColor: "#000" }}
                             />
                             <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
-                                isAslProcessing ? 'bg-emerald-400/90 text-[#092014]' : 'bg-red-400/90 text-white'
-                              }`}>
-                                <span className={`h-2 w-2 rounded-full ${isAslProcessing ? 'animate-pulse bg-white' : 'bg-red-200'}`} />
-                                {isAslProcessing ? 'Processing' : 'Inactive'}
+                              <span
+                                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
+                                  isAslProcessing
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-red-400/90 text-white"
+                                }`}
+                              >
+                                <span
+                                  className={`h-2 w-2 rounded-full ${
+                                    isAslProcessing ? "animate-pulse bg-white" : "bg-red-200"
+                                  }`}
+                                />
+                                {isAslProcessing ? "Processing" : "Inactive"}
                               </span>
                             </div>
                           </div>
 
-                          {/* ASL Recognition Display */}
-                          <div className="rounded-[16px] border border-white/10 bg-[#081017] p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-slate-300">Recognized Text</span>
-                              <span className="text-xs text-slate-500">
+                          <div className="rounded-[16px] border border-border/70 bg-background/75 p-4">
+                            <div className="mb-2 flex items-center justify-between">
+                              <span className="text-sm font-medium text-foreground">Recognized Text</span>
+                              <span className="text-xs text-muted-foreground">
                                 Confidence: {Math.round(aslConfidence * 100)}%
                               </span>
                             </div>
-                            <div className="min-h-[60px] rounded bg-black/20 p-3 text-lg font-mono text-emerald-200">
-                              {aslText || <span className="text-slate-500">Start signing...</span>}
+                            <div className="min-h-[60px] rounded bg-secondary p-3 text-lg font-mono text-primary">
+                              {aslText || <span className="text-muted-foreground">Start signing...</span>}
                             </div>
                             {aslLastSign && (
-                              <div className="mt-2 text-xs text-slate-400">
-                                Last sign: <span className="font-medium text-emerald-300">{aslLastSign}</span>
+                              <div className="mt-2 text-xs text-muted-foreground">
+                                Last sign: <span className="font-medium text-primary">{aslLastSign}</span>
                               </div>
                             )}
                           </div>
 
-                          {/* ASL Controls */}
                           <div className="flex gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={resetAslBuffer}
-                              className="flex-1 rounded-xl border-white/10 bg-transparent text-slate-300 hover:bg-white/5"
+                              className="flex-1 rounded-xl border-border/70 bg-transparent text-foreground hover:bg-accent"
                             >
                               Clear Text
                             </Button>
@@ -765,24 +718,14 @@ export default function InterviewPage() {
                               size="sm"
                               onClick={() => {
                                 if (aslText.trim()) {
-                                  setAnswer(prev => prev + (prev ? ' ' : '') + aslText.trim());
+                                  setAnswer((prev) => prev + (prev ? " " : "") + aslText.trim());
                                   resetAslBuffer();
                                 }
                               }}
-                              className="flex-1 rounded-xl border-emerald-300/30 bg-emerald-300/10 text-emerald-200 hover:bg-emerald-300/20"
+                              className="flex-1 rounded-xl border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
                             >
                               Add to Answer
                             </Button>
-                            {!isAslProcessing && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={startAslProcessing}
-                                className="rounded-xl border-orange-300/30 bg-orange-300/10 text-orange-200 hover:bg-orange-300/20"
-                              >
-                                Start Processing
-                              </Button>
-                            )}
                           </div>
                         </div>
                       )}
@@ -790,11 +733,11 @@ export default function InterviewPage() {
                   </Card>
                 )}
 
-                <Card className="rounded-[32px] border-white/10 bg-[#0d141b]">
+                <Card className="panel-surface rounded-[32px]">
                   <CardHeader>
-                    <CardTitle className="text-white">Session guide</CardTitle>
+                    <CardTitle className="text-foreground">Session guide</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm leading-7 text-slate-400">
+                  <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
                     <p>Technical questions are grounded in your uploaded resume content.</p>
                     <p>Behavioral questions test clarity, decision-making, and communication.</p>
                     <p>Use `Ctrl+Enter` or `Cmd+Enter` to submit quickly from the answer box.</p>
