@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, LogOut, Mic, ScanSearch, Settings2, Sparkles } from "lucide-react";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
 
@@ -49,7 +48,6 @@ export default function DashboardLayout({
             </Link>
 
             <div className="flex flex-wrap items-center gap-3">
-              <ThemeToggle />
               <Button
                 variant="outline"
                 onClick={handleLogout}

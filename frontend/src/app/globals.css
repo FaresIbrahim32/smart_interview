@@ -106,6 +106,10 @@
       radial-gradient(circle at 80% 20%, var(--app-spot-b), transparent 20%),
       linear-gradient(180deg, var(--app-bg-start) 0%, var(--app-bg-end) 100%);
     background-attachment: fixed;
+    transition:
+      background-color 220ms ease,
+      color 220ms ease,
+      background-image 300ms ease;
   }
 
   ::selection {
@@ -143,18 +147,32 @@
     color: var(--text-primary);
     box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
     backdrop-filter: blur(16px);
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease,
+      transform 220ms ease,
+      box-shadow 220ms ease;
   }
 
   .app-panel-soft {
     background: var(--panel-soft);
     border: 1px solid var(--panel-border);
     color: var(--text-primary);
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease;
   }
 
   .app-chip {
     background: var(--chip-bg);
     border: 1px solid var(--chip-border);
     color: var(--chip-text);
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease;
   }
 
   .app-text-primary {
@@ -173,6 +191,11 @@
     background: color-mix(in srgb, var(--panel) 85%, transparent);
     border: 1px solid var(--panel-border);
     color: var(--text-primary);
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease,
+      box-shadow 220ms ease;
   }
 
   .app-input::placeholder {
@@ -182,6 +205,11 @@
   .app-primary-button {
     background: var(--button-bg);
     color: var(--button-text);
+    transition:
+      background-color 220ms ease,
+      color 220ms ease,
+      transform 220ms ease,
+      filter 220ms ease;
   }
 
   .app-primary-button:hover {
@@ -192,6 +220,12 @@
     background: var(--button-secondary-bg);
     border: 1px solid var(--panel-border);
     color: var(--button-secondary-text);
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease,
+      transform 220ms ease,
+      filter 220ms ease;
   }
 
   .app-secondary-button:hover {

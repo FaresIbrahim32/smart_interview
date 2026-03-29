@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +24,6 @@ export default function AuthLayout({
             </div>
           </Link>
 
-          <ThemeToggle />
         </header>
 
         <div className="flex flex-1 items-center justify-center py-12">

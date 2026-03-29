@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { AppTransitionShell } from "@/components/theme/app-transition-shell";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import "./globals.css";
 
@@ -18,7 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="dark">
       <body className={inter.className}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AppTransitionShell>{children}</AppTransitionShell>
+        </ThemeProvider>
       </body>
     </html>
   );

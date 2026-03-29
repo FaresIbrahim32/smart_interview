@@ -7,6 +7,7 @@ type Theme = "dark" | "light";
 interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
+  isThemeChanging: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -18,6 +19,7 @@ function applyTheme(theme: Theme) {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
+  const [isThemeChanging, setIsThemeChanging] = useState(false);
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("smart-interview-theme");
@@ -30,15 +32,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       theme,
       toggleTheme: () => {
+        setIsThemeChanging(true);
         setTheme((currentTheme) => {
           const nextTheme = currentTheme === "dark" ? "light" : "dark";
           window.localStorage.setItem("smart-interview-theme", nextTheme);
           applyTheme(nextTheme);
+          window.setTimeout(() => setIsThemeChanging(false), 420);
           return nextTheme;
         });
       },
+      isThemeChanging,
     }),
-    [theme]
+    [theme, isThemeChanging]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

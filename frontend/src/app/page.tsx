@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { FileText, Mic, ScanSearch, Sparkles, Video } from "lucide-react";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 const productFlows = [
@@ -68,34 +67,36 @@ export default function Home() {
             </div>
 
             <div className="flex items-center justify-start gap-3 lg:justify-end">
-              <ThemeToggle />
               <Link href="/login">
                 <Button variant="outline" className="app-secondary-button h-11 rounded-2xl px-5">
                   Log In
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button className="app-primary-button h-11 rounded-2xl px-5">
+                  Get Started
                 </Button>
               </Link>
             </div>
           </header>
         </FadeIn>
 
-        <section className="grid flex-1 gap-10 py-16 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:items-start">
+        <section className="grid gap-10 py-16 lg:grid-cols-[minmax(0,1.1fr)_360px] lg:items-start">
           <FadeIn delay={0.08}>
-            <div className="space-y-10">
-              <div className="space-y-6 text-left">
-                <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm app-chip">
-                  <span className="h-2 w-2 rounded-full bg-current" />
-                  Built around the product routes that already work
-                </div>
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm app-chip">
+                <span className="h-2 w-2 rounded-full bg-current" />
+                Built around the product routes that already work
+              </div>
 
-                <div className="max-w-3xl space-y-4">
-                  <h1 className="text-5xl font-semibold leading-[0.98] tracking-[-0.04em] app-text-primary sm:text-6xl lg:text-7xl">
-                    Get ready for interviews with one clear workflow.
-                  </h1>
-                  <p className="max-w-2xl text-lg leading-8 app-text-muted sm:text-xl">
-                    Upload your resume, review the screening results, and practice your
-                    answers in the same app.
-                  </p>
-                </div>
+              <div className="max-w-3xl space-y-4 text-left">
+                <h1 className="text-5xl font-semibold leading-[0.98] tracking-[-0.04em] app-text-primary sm:text-6xl lg:text-7xl">
+                  Get ready for interviews with one clear workflow.
+                </h1>
+                <p className="max-w-2xl text-lg leading-8 app-text-muted sm:text-xl">
+                  Upload your resume, review the screening results, and practice your
+                  answers in the same app.
+                </p>
               </div>
 
               <div className="flex flex-wrap items-center justify-start gap-3">
@@ -112,26 +113,6 @@ export default function Home() {
                     Continue
                   </Button>
                 </Link>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2">
-                {productFlows.map((item, index) => (
-                  <motion.article
-                    key={item.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.15 + index * 0.08 }}
-                    className="app-panel rounded-[28px] p-6"
-                  >
-                    <div className="app-panel-soft mb-5 flex h-11 w-11 items-center justify-center rounded-2xl">
-                      <item.icon className="h-5 w-5 app-text-primary" />
-                    </div>
-                    <div className="space-y-2">
-                      <h2 className="text-lg font-semibold app-text-primary">{item.title}</h2>
-                      <p className="text-sm leading-7 app-text-muted">{item.copy}</p>
-                    </div>
-                  </motion.article>
-                ))}
               </div>
             </div>
           </FadeIn>
@@ -170,6 +151,30 @@ export default function Home() {
             </aside>
           </FadeIn>
         </section>
+
+        <FadeIn delay={0.22}>
+          <section className="mx-auto flex w-full max-w-6xl justify-center pb-16">
+            <div className="grid w-full gap-5 md:grid-cols-2">
+              {productFlows.map((item, index) => (
+                <motion.article
+                  key={item.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.18 + index * 0.08 }}
+                  className="app-panel rounded-[28px] p-8"
+                >
+                  <div className="app-panel-soft mb-6 flex h-14 w-14 items-center justify-center rounded-2xl">
+                    <item.icon className="h-5 w-5 app-text-primary" />
+                  </div>
+                  <div className="max-w-md space-y-3 text-left">
+                    <h2 className="text-lg font-semibold app-text-primary">{item.title}</h2>
+                    <p className="text-sm leading-7 app-text-muted">{item.copy}</p>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
       </div>
     </main>
   );
