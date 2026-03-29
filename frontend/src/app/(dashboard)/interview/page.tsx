@@ -141,12 +141,37 @@ export default function InterviewPage() {
   }, []);
 
   // ASL processing functions
-  const startAslProcessing = useCallback(() => {
-    if (!videoRef.current || !camGranted) return;
+  const startAslProcessing = useCallback(async () => {
+    if (!videoRef.current || !camGranted) {
+      console.log('ASL processing not started: video ref or camera not ready');
+      return;
+    }
+
+    console.log('Starting ASL processing...');
+
+    // Test backend connection first
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const testRes = await fetch(`${apiUrl}/asl/reset?session_id=${aslSessionId.current}`, {
+        method: 'POST'
+      });
+      if (!testRes.ok) {
+        console.error('Backend ASL endpoint not available');
+        alert('ASL backend not available. Please make sure the backend server is running.');
+        return;
+      }
+    } catch (error) {
+      console.error('Backend connection test failed:', error);
+      alert('Cannot connect to ASL backend. Please check if the server is running on port 8000.');
+      return;
+    }
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.error('Could not get canvas context');
+      return;
+    }
 
     canvas.width = 320;
     canvas.height = 240;
@@ -175,6 +200,8 @@ export default function InterviewPage() {
           setAslText(data.buffer || '');
           setAslConfidence(data.confidence || 0);
           setAslLastSign(data.last_sign || '');
+        } else {
+          console.error('ASL processing failed:', res.status, res.statusText);
         }
       } catch (error) {
         console.error('ASL processing error:', error);
@@ -184,6 +211,7 @@ export default function InterviewPage() {
     // Process frames at ~10 FPS
     aslIntervalRef.current = setInterval(processFrame, 100);
     setIsAslProcessing(true);
+    console.log('ASL processing started');
   }, [camGranted]);
 
   const stopAslProcessing = useCallback(() => {
@@ -275,17 +303,27 @@ export default function InterviewPage() {
 
   const startCamera = async () => {
     try {
-      const media = await navigator.mediaDevices.getUserMedia({ video: true });
+      console.log('Requesting camera access...');
+      const media = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 }
+      });
+      console.log('Camera access granted');
       setStream(media);
       setCamGranted(true);
-      if (videoRef.current) videoRef.current.srcObject = media;
-
-      // Start ASL processing if in ASL mode
-      if (language === 'asl') {
-        setTimeout(startAslProcessing, 500); // Wait for video to load
+      if (videoRef.current) {
+        videoRef.current.srcObject = media;
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded');
+          if (language === 'asl') {
+            setTimeout(startAslProcessing, 500);
+          }
+        };
       }
-    } catch {
-      // Permission denied.
+    } catch (error) {
+      console.error('Camera access error:', error);
+      alert(`Camera access failed: ${error.message || 'Unknown error'}. Please check your camera permissions and try again.`);
+      setCamGranted(false);
     }
   };
 
@@ -632,13 +670,34 @@ export default function InterviewPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {!camGranted ? (
-                        <Button
-                          className="h-12 w-full rounded-2xl bg-emerald-400 text-base font-semibold text-[#092014] hover:bg-emerald-300"
-                          onClick={startCamera}
-                        >
-                          <Video className="mr-2 h-5 w-5" />
-                          Enable Camera for ASL
-                        </Button>
+                        <div className="space-y-3">
+                          <Button
+                            className="h-12 w-full rounded-2xl bg-emerald-400 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+                            onClick={startCamera}
+                          >
+                            <Video className="mr-2 h-5 w-5" />
+                            Enable Camera for ASL
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="h-10 w-full rounded-xl border-white/10 bg-transparent text-slate-300 hover:bg-white/5"
+                            onClick={async () => {
+                              try {
+                                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+                                const res = await fetch(`${apiUrl}/asl/reset?session_id=test`, { method: 'POST' });
+                                if (res.ok) {
+                                  alert('✅ Backend ASL endpoint is working!');
+                                } else {
+                                  alert(`❌ Backend error: ${res.status}`);
+                                }
+                              } catch (error) {
+                                alert(`❌ Cannot connect to backend: ${error.message}`);
+                              }
+                            }}
+                          >
+                            Test Backend Connection
+                          </Button>
+                        </div>
                       ) : (
                         <div className="space-y-4">
                           <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black">
