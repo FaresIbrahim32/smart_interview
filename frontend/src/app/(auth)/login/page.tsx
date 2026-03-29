@@ -51,22 +51,18 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="w-full rounded-[32px] border-white/10 bg-[#0d141b] shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
+    <Card className="app-panel rounded-[32px] shadow-[0_24px_80px_rgba(15,23,42,0.12)]">
       <CardHeader className="space-y-3">
-        <div className="inline-flex w-fit rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-emerald-100">
-          Welcome back
-        </div>
-        <CardTitle className="text-3xl text-white">Log in to your prep studio</CardTitle>
-        <CardDescription className="text-base leading-7 text-slate-400">
-          Pick up where you left off with saved resumes, screening results, and mock
-          interview sessions.
+        <CardTitle className="text-3xl app-text-primary">Log in</CardTitle>
+        <CardDescription className="text-base leading-7 app-text-muted">
+          Access your saved setup, resume screening, and interview sessions.
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleLogin}>
         <CardContent className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-slate-200">
+            <Label htmlFor="email" className="app-text-secondary">
               Email
             </Label>
             <Input
@@ -76,22 +72,22 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-12 rounded-2xl border-white/10 bg-[#081017] text-white placeholder:text-slate-500 focus-visible:ring-emerald-300"
+              className="app-input h-12 rounded-2xl"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-slate-200">
+            <Label htmlFor="password" className="app-text-secondary">
               Password
             </Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-12 rounded-2xl border-white/10 bg-[#081017] text-white placeholder:text-slate-500 focus-visible:ring-emerald-300"
+              className="app-input h-12 rounded-2xl"
             />
           </div>
 
@@ -105,17 +101,17 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col items-stretch gap-4">
           <Button
             type="submit"
-            className="h-12 w-full rounded-2xl bg-emerald-400 text-base font-semibold text-[#092014] hover:bg-emerald-300"
+            className="app-primary-button h-12 w-full rounded-2xl text-base font-semibold"
             disabled={loading}
           >
             {loading ? "Logging in..." : "Log In"}
           </Button>
 
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm app-text-muted">
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="inline-flex items-center gap-1 text-emerald-200 transition hover:text-white"
+              className="inline-flex items-center gap-1 app-text-secondary hover:opacity-80"
             >
               Sign up <ArrowRight className="h-4 w-4" />
             </Link>

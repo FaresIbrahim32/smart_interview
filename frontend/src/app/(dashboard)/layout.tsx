@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, ScanSearch, Settings2, Sparkles, LogOut, Mic } from "lucide-react";
+import { LayoutDashboard, LogOut, Mic, ScanSearch, Settings2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
 
@@ -31,59 +31,56 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(87,225,164,0.10),_transparent_26%),radial-gradient(circle_at_80%_20%,_rgba(56,189,248,0.08),_transparent_18%)]" />
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
-        <header className="flex flex-col gap-5 border-b border-white/8 pb-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
+    <div className="app-shell">
+      <div className="app-container">
+        <header className="app-header flex flex-col gap-6 pb-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
-                <Sparkles className="h-5 w-5 text-emerald-300" />
+              <div className="app-panel-soft flex h-11 w-11 items-center justify-center rounded-2xl">
+                <Sparkles className="h-5 w-5 app-text-primary" />
               </div>
-              <div>
-                <p className="text-lg font-semibold tracking-tight text-white">
+              <div className="space-y-1">
+                <p className="text-lg font-semibold tracking-tight app-text-primary">
                   smart interview
                 </p>
-                <p className="text-sm text-slate-400">
-                  Consistent prep studio across every workflow
-                </p>
+                <p className="text-sm app-text-muted">Interview preparation workspace</p>
               </div>
             </Link>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="app-secondary-button h-11 rounded-2xl px-5"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <nav className="flex flex-wrap gap-2">
-              {navItems.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm transition ${
-                      active
-                        ? "border-emerald-300/30 bg-emerald-300/12 text-emerald-100"
-                        : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06] hover:text-white"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="h-11 rounded-2xl border-white/10 bg-transparent px-5 text-slate-100 hover:bg-white/5"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
-          </div>
+          <nav className="flex flex-wrap items-center gap-2">
+            {navItems.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm transition ${
+                    active
+                      ? "app-chip"
+                      : "app-panel-soft app-text-secondary hover:opacity-90"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
         </header>
 
-        <div className="flex-1 py-8">{children}</div>
+        <div className="flex-1 py-10">{children}</div>
       </div>
     </div>
   );
